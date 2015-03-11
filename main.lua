@@ -126,13 +126,17 @@ end
 function move_ship(p, dt)
   -- p can be a player or enemy ship
 
+  local old_inside_x = (INNER_X <= p.x) and (p.x <= INNER_X2)
+  local old_inside_y = (INNER_Y <= p.y) and (p.y <= INNER_Y2)
+
   p.x = p.x + p.vel_x * dt
   p.y = p.y + p.vel_y * dt
 
   -- safety buffer
   local epsilon = 0.001
 
-  -- bounce of edges
+  -- bounce off edges
+
   if p.x < p.r then
     p.x = p.r + epsilon
     p.vel_x = - p.vel_x * BOUNCE_FRICTION
@@ -147,13 +151,65 @@ function move_ship(p, dt)
   if p.y < p.r then
     p.y = p.r + epsilon
     p.vel_y = - p.vel_y * BOUNCE_FRICTION
-    edges_hit[2] = game_time
+    edges_hit[8] = game_time
   
   elseif p.y > SCREEN_H - p.r then
     p.y = SCREEN_H - p.r - epsilon
     p.vel_y = - p.vel_y * BOUNCE_FRICTION
-    edges_hit[8] = game_time
+    edges_hit[2] = game_time
   end
+
+  -- bounce off inner box
+
+  local inside_x = (INNER_X <= p.x) and (p.x <= INNER_X2)
+  local inside_y = (INNER_Y <= p.y) and (p.y <= INNER_Y2)
+
+  if inside_x and inside_y then
+    -- figure out if we hit the top/bottom ("y") or the left/right sides ("x")
+    local way
+
+    if not old_inside_x and not old_inside_y then
+      -- hit at a corner
+      way = "x"  -- TODO : check velocity
+
+    elseif old_inside_x then
+      way = "y"
+
+    else
+      way = "x"
+    end
+
+    if way == "x" then
+      if p.x > SCREEN_W/2 then
+        p.x = INNER_X2 + epsilon
+        p.vel_x = - p.vel_x * BOUNCE_FRICTION
+        p.vel_x = math.max(-0.1, p.vel_x)
+        inners_hit[6] = game_time
+      else
+        p.x = INNER_X - epsilon
+        p.vel_x = - p.vel_x * BOUNCE_FRICTION
+        p.vel_x = math.min(0.1, p.vel_x)
+        inners_hit[4] = game_time
+      end
+
+    else -- way == "y"
+
+      if p.y > SCREEN_H/2 then
+        p.y = INNER_Y2 + epsilon
+        p.vel_y = - p.vel_y * BOUNCE_FRICTION
+        p.vel_y = math.max(-0.1, p.vel_y)
+        inners_hit[2] = game_time
+      else
+        p.y = INNER_Y - epsilon
+        p.vel_y = - p.vel_y * BOUNCE_FRICTION
+        p.vel_y = math.min(0.1, p.vel_y)
+        inners_hit[8] = game_time
+      end
+
+    end
+
+  end
+
 end
 
 
@@ -247,15 +303,15 @@ function love.draw()
 
   -- draw outer edges (when hit)
 
-  draw_edge(2, 1, 1, SCREEN_W-1, 1)
-  draw_edge(8, 1, SCREEN_H-1, SCREEN_W-1, SCREEN_H-1)
+  draw_edge(2, 1, SCREEN_H-1, SCREEN_W-1, SCREEN_H-1)
+  draw_edge(8, 1, 1, SCREEN_W-1, 1)
   draw_edge(4, 1, 1, 1, SCREEN_H-1)
   draw_edge(6, SCREEN_W-1, 1, SCREEN_W-1, SCREEN_H-1)
 
   -- draw the inner box
 
-  draw_inner_edge(2, INNER_X,  INNER_Y,  INNER_X2, INNER_Y)
-  draw_inner_edge(8, INNER_X,  INNER_Y2, INNER_X2, INNER_Y2)
+  draw_inner_edge(2, INNER_X,  INNER_Y2, INNER_X2, INNER_Y2)
+  draw_inner_edge(8, INNER_X,  INNER_Y,  INNER_X2, INNER_Y)
   draw_inner_edge(4, INNER_X,  INNER_Y,  INNER_X,  INNER_Y2)
   draw_inner_edge(6, INNER_X2, INNER_Y,  INNER_X2, INNER_Y2)
 
