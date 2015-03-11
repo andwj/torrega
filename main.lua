@@ -8,6 +8,8 @@
 
 player =
 {
+  health = 100,
+
   x = 50,
   y = 500,
 
@@ -15,10 +17,16 @@ player =
 
   angle = 0,
 
-  vel_dx = 0,
-  vel_dy = 0
+  vel_x = 0,
+  vel_y = 0
 }
 
+TURN_SPEED = 240
+
+THRUST_VELOCITY = 200
+
+
+------ RENDERING ---------------------
 
 
 function player_draw(p)
@@ -41,9 +49,82 @@ end
 
 
 
+
+------ PHYSICS ---------------------
+
+
+function player_reset(p)
+
+end
+
+
+function player_input(p, dt)
+
+  local turn_left  = love.keyboard.isDown("left")  or love.keyboard.isDown("a")
+  local turn_right = love.keyboard.isDown("right") or love.keyboard.isDown("d")
+
+  if turn_left and turn_right then
+    -- do nothing if both are pressed
+  elseif turn_left then
+    p.angle = p.angle + TURN_SPEED * dt
+  elseif turn_right then
+    p.angle = p.angle - TURN_SPEED * dt
+  end
+
+
+  local thrust = love.keyboard.isDown("up") or love.keyboard.isDown("w")
+
+  if thrust then
+    local dx =  math.cos(p.angle * math.pi / 180.0)
+    local dy = -math.sin(p.angle * math.pi / 180.0)
+    
+    p.vel_x = p.vel_x + THRUST_VELOCITY * dx * dt
+    p.vel_y = p.vel_y + THRUST_VELOCITY * dy * dt
+  end
+
+
+  local fire = love.keyboard.isDown(" ") or love.keyboard.isDown("lctrl") or
+               love.keyboard.isDown("rctrl")
+
+  -- TODO : firing
+end
+
+
+
+function move_ship(p, dt)
+  -- p can be a player or enemy ship
+
+  p.x = p.x + p.vel_x * dt
+  p.y = p.y + p.vel_y * dt
+
+  -- bounce of edges
+  if p.x < 0 then
+    p.x = 0
+    p.vel_x = - p.vel_x
+  
+  elseif p.x > 800 then
+    p.x = 800
+    p.vel_x = - p.vel_x
+  end
+
+  if p.y < 0 then
+    p.y = 0
+    p.vel_y = - p.vel_y
+  
+  elseif p.y > 600 then
+    p.y = 600
+    p.vel_y = - p.vel_y
+  end
+end
+
+
 function run_physics(dt)
 
-  player.angle = player.angle - dt * 120
+  if player.health > 0 then
+    player_input(player, dt)
+    move_ship(player, dt)
+  end
+
 end
 
 
