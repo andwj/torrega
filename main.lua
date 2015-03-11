@@ -29,7 +29,8 @@ INNER_W  = 300
 INNER_H  = 200
 
 -- indexed by DIR (2, 4, 6 or 8)
-edges_hit = { }
+edges_hit  = { }
+inners_hit = { }
 
 
 
@@ -76,10 +77,14 @@ end
 
 
 function game_reset()
+  game_time  = 0
+  delta_time = 0
+
   player_reset(player)
 
   for dir = 2,8,2 do
-    edges_hit[dir] = 0
+    edges_hit[dir]  = -2
+    inners_hit[dir] = -2
   end
 end
 
@@ -186,6 +191,9 @@ function love.load()
   INNER_X = (SCREEN_W - INNER_W) / 2
   INNER_Y = (SCREEN_H - INNER_H) / 2
 
+  INNER_X2 = INNER_X + INNER_W
+  INNER_Y2 = INNER_Y + INNER_H
+
   game_reset()
 end
 
@@ -221,23 +229,35 @@ local function draw_edge(dir, x1, y1, x2, y2)
 end
 
 
+local function draw_inner_edge(dir, x1, y1, x2, y2)
+  local qty = inners_hit[dir] + 1.0 - game_time
+
+  if qty <= 0 then qty = 0 end
+
+  qty = qty ^ 0.5
+
+  love.graphics.setColor(255*qty, 255, 0)
+  love.graphics.line(x1, y1, x2, y2)
+end
+
+
 
 function love.draw()
   player_draw(player)
 
-  -- draw the inner box
-
-  love.graphics.setColor(0,255,0)
-  love.graphics.rectangle("line", INNER_X, INNER_Y, INNER_W, INNER_H)
-
   -- draw outer edges (when hit)
-
-  love.graphics.setColor(255,255,255)
 
   draw_edge(2, 1, 1, SCREEN_W-1, 1)
   draw_edge(8, 1, SCREEN_H-1, SCREEN_W-1, SCREEN_H-1)
   draw_edge(4, 1, 1, 1, SCREEN_H-1)
   draw_edge(6, SCREEN_W-1, 1, SCREEN_W-1, SCREEN_H-1)
+
+  -- draw the inner box
+
+  draw_inner_edge(2, INNER_X,  INNER_Y,  INNER_X2, INNER_Y)
+  draw_inner_edge(8, INNER_X,  INNER_Y2, INNER_X2, INNER_Y2)
+  draw_inner_edge(4, INNER_X,  INNER_Y,  INNER_X,  INNER_Y2)
+  draw_inner_edge(6, INNER_X2, INNER_Y,  INNER_X2, INNER_Y2)
 
   -- score etc  (FIXME)
 
