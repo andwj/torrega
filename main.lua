@@ -293,7 +293,7 @@ local function draw_inner_edge(dir, x1, y1, x2, y2)
 
   qty = qty ^ 0.5
 
-  love.graphics.setColor(255*qty, 255, 0)
+  love.graphics.setColor(255*qty, 255*qty, 255*(1-qty))
   love.graphics.line(x1, y1, x2, y2)
 end
 
