@@ -8,22 +8,22 @@
 
 player =
 {
-  health = 100,
-
-  x = 50,
-  y = 500,
-
-  r = 15,
-
-  angle = 0,
-
-  vel_x = 0,
-  vel_y = 0
+  -- Fields:
+  --    health
+  --    x, y, vel_x, vel_y
+  --    angle (in degrees)
+  --    r (radius)
 }
 
 TURN_SPEED = 240
 
-THRUST_VELOCITY = 200
+THRUST_VELOCITY = 300
+
+BOUNCE_FRICTION = 0.95
+
+
+SCREEN_W = 800
+SCREEN_H = 600
 
 
 ------ RENDERING ---------------------
@@ -54,7 +54,17 @@ end
 
 
 function player_reset(p)
+  p.health = 100
 
+  p.x = 50
+  p.y = 100
+
+  p.vel_x = 0
+  p.vel_y = 0
+
+  p.angle = 0
+
+  p.r = 15
 end
 
 
@@ -97,25 +107,29 @@ function move_ship(p, dt)
   p.x = p.x + p.vel_x * dt
   p.y = p.y + p.vel_y * dt
 
+  -- safety buffer
+  local epsilon = 0.001
+
   -- bounce of edges
-  if p.x < 0 then
-    p.x = 0
-    p.vel_x = - p.vel_x
+  if p.x < p.r then
+    p.x = p.r + epsilon
+    p.vel_x = - p.vel_x * BOUNCE_FRICTION
   
-  elseif p.x > 800 then
-    p.x = 800
-    p.vel_x = - p.vel_x
+  elseif p.x > SCREEN_W - p.r then
+    p.x = SCREEN_W - p.r - epsilon
+    p.vel_x = - p.vel_x * BOUNCE_FRICTION
   end
 
-  if p.y < 0 then
-    p.y = 0
-    p.vel_y = - p.vel_y
+  if p.y < p.r then
+    p.y = p.r + epsilon
+    p.vel_y = - p.vel_y * BOUNCE_FRICTION
   
-  elseif p.y > 600 then
-    p.y = 600
-    p.vel_y = - p.vel_y
+  elseif p.y > SCREEN_H - p.r then
+    p.y = SCREEN_H - p.r - epsilon
+    p.vel_y = - p.vel_y * BOUNCE_FRICTION
   end
 end
+
 
 
 function run_physics(dt)
@@ -147,6 +161,8 @@ function love.load()
 
   love.window.setMode(800, 600, {fullscreen=false})
   love.window.setTitle("Torrega")
+
+  player_reset(player)
 end
 
 
