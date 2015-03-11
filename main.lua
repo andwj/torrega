@@ -50,9 +50,9 @@ function player_draw(p)
   love.graphics.setColor(255,255,255)
 
   love.graphics.line(
-    p.x + p.r * dx1, p.y + p.r * dy1,
-    p.x + p.r * dx2, p.y + p.r * dy2,
-    p.x + p.r * dx3, p.y + p.r * dy3)
+    p.x + p.r2 * dx1, p.y + p.r2 * dy1,
+    p.x + p.r2 * dx2, p.y + p.r2 * dy2,
+    p.x + p.r2 * dx3, p.y + p.r2 * dy3)
 end
 
 
@@ -71,7 +71,8 @@ function player_reset(p)
 
   p.angle = 0
 
-  p.r = 15
+  p.r  = 10  -- used for physics
+  p.r2 = 15  -- used for drawing
 end
 
 
@@ -126,8 +127,8 @@ end
 function move_ship(p, dt)
   -- p can be a player or enemy ship
 
-  local old_inside_x = (INNER_X <= p.x) and (p.x <= INNER_X2)
-  local old_inside_y = (INNER_Y <= p.y) and (p.y <= INNER_Y2)
+  local old_inside_x = (INNER_X - p.r <= p.x) and (p.x <= INNER_X2 + p.r)
+  local old_inside_y = (INNER_Y - p.r <= p.y) and (p.y <= INNER_Y2 + p.r)
 
   p.x = p.x + p.vel_x * dt
   p.y = p.y + p.vel_y * dt
@@ -161,8 +162,8 @@ function move_ship(p, dt)
 
   -- bounce off inner box
 
-  local inside_x = (INNER_X <= p.x) and (p.x <= INNER_X2)
-  local inside_y = (INNER_Y <= p.y) and (p.y <= INNER_Y2)
+  local inside_x = (INNER_X - p.r <= p.x) and (p.x <= INNER_X2 + p.r)
+  local inside_y = (INNER_Y - p.r <= p.y) and (p.y <= INNER_Y2 + p.r)
 
   if inside_x and inside_y then
     -- figure out if we hit the top/bottom ("y") or the left/right sides ("x")
@@ -181,12 +182,12 @@ function move_ship(p, dt)
 
     if way == "x" then
       if p.x > SCREEN_W/2 then
-        p.x = INNER_X2 + epsilon
+        p.x = INNER_X2 + p.r + epsilon
         p.vel_x = - p.vel_x * BOUNCE_FRICTION
         p.vel_x = math.max(-0.1, p.vel_x)
         inners_hit[6] = game_time
       else
-        p.x = INNER_X - epsilon
+        p.x = INNER_X - p.r - epsilon
         p.vel_x = - p.vel_x * BOUNCE_FRICTION
         p.vel_x = math.min(0.1, p.vel_x)
         inners_hit[4] = game_time
@@ -195,12 +196,12 @@ function move_ship(p, dt)
     else -- way == "y"
 
       if p.y > SCREEN_H/2 then
-        p.y = INNER_Y2 + epsilon
+        p.y = INNER_Y2 + p.r + epsilon
         p.vel_y = - p.vel_y * BOUNCE_FRICTION
         p.vel_y = math.max(-0.1, p.vel_y)
         inners_hit[2] = game_time
       else
-        p.y = INNER_Y - epsilon
+        p.y = INNER_Y - p.r + epsilon
         p.vel_y = - p.vel_y * BOUNCE_FRICTION
         p.vel_y = math.min(0.1, p.vel_y)
         inners_hit[8] = game_time
