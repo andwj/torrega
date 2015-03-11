@@ -25,6 +25,13 @@ BOUNCE_FRICTION = 0.95
 SCREEN_W = 800
 SCREEN_H = 600
 
+INNER_W  = 300
+INNER_H  = 200
+
+-- indexed by DIR (2, 4, 6 or 8)
+edges_hit = { }
+
+
 
 ------ RENDERING ---------------------
 
@@ -49,7 +56,6 @@ end
 
 
 
-
 ------ PHYSICS ---------------------
 
 
@@ -66,6 +72,17 @@ function player_reset(p)
 
   p.r = 15
 end
+
+
+
+function game_reset()
+  player_reset(player)
+
+  for dir = 2,8,2 do
+    edges_hit[dir] = 0
+  end
+end
+
 
 
 function player_input(p, dt)
@@ -114,19 +131,23 @@ function move_ship(p, dt)
   if p.x < p.r then
     p.x = p.r + epsilon
     p.vel_x = - p.vel_x * BOUNCE_FRICTION
+    edges_hit[4] = game_time
   
   elseif p.x > SCREEN_W - p.r then
     p.x = SCREEN_W - p.r - epsilon
     p.vel_x = - p.vel_x * BOUNCE_FRICTION
+    edges_hit[6] = game_time
   end
 
   if p.y < p.r then
     p.y = p.r + epsilon
     p.vel_y = - p.vel_y * BOUNCE_FRICTION
+    edges_hit[2] = game_time
   
   elseif p.y > SCREEN_H - p.r then
     p.y = SCREEN_H - p.r - epsilon
     p.vel_y = - p.vel_y * BOUNCE_FRICTION
+    edges_hit[8] = game_time
   end
 end
 
@@ -160,9 +181,12 @@ function love.load()
   love.graphics.setNewFont(20)
 
   love.window.setMode(800, 600, {fullscreen=false})
-  love.window.setTitle("Torrega")
+  love.window.setTitle("Torrega Race")
 
-  player_reset(player)
+  INNER_X = (SCREEN_W - INNER_W) / 2
+  INNER_Y = (SCREEN_H - INNER_H) / 2
+
+  game_reset()
 end
 
 
@@ -185,8 +209,37 @@ end
 
 
 
+local function draw_edge(dir, x1, y1, x2, y2)
+  local qty = edges_hit[dir] + 1.0 - game_time
+
+  if qty <= 0 then return end
+
+  qty = qty ^ 0.5
+
+  love.graphics.setColor(255*qty, 255*qty, 0)
+  love.graphics.line(x1, y1, x2, y2)
+end
+
+
+
 function love.draw()
   player_draw(player)
+
+  -- draw the inner box
+
+  love.graphics.setColor(0,255,0)
+  love.graphics.rectangle("line", INNER_X, INNER_Y, INNER_W, INNER_H)
+
+  -- draw outer edges (when hit)
+
+  love.graphics.setColor(255,255,255)
+
+  draw_edge(2, 1, 1, SCREEN_W-1, 1)
+  draw_edge(8, 1, SCREEN_H-1, SCREEN_W-1, SCREEN_H-1)
+  draw_edge(4, 1, 1, 1, SCREEN_H-1)
+  draw_edge(6, SCREEN_W-1, 1, SCREEN_W-1, SCREEN_H-1)
+
+  -- score etc  (FIXME)
 
   love.graphics.setColor(255,255,0)
   love.graphics.print(math.floor(game_time), 700, 10)
