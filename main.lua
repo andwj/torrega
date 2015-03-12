@@ -157,7 +157,7 @@ PLAYER_INFO =
 
     r = 15,
 
-    color = { 85,255,255 },
+    color = { 128,255,255 },
 
     lines =
     {
@@ -867,20 +867,34 @@ function draw_ui()
 
   love.graphics.setColor(52, 80, 255)
   love.graphics.setFont(fonts.title)
-  love.graphics.printf("Round 1", 250, 250, 300, "center")
+  love.graphics.printf("Round 1", 250, 230, 300, "center")
 
   local sx = SCREEN_W / 2
+  local sy = 310
+
+  if all_players[2] then
+    sy = sy - 20
+  end
 
   love.graphics.setFont(fonts.normal)
   love.graphics.setColor(0, 0, 255)
-  love.graphics.printf("Score:", sx - 110, 300, 100, "right")
+  love.graphics.printf("Score:", sx - 110, sy, 100, "right")
 
-  love.graphics.setColor(216, 216, 216)
-  love.graphics.printf("000000", sx, 300, 100, "left")
+  love.graphics.setColor(176, 176, 176)
+  love.graphics.printf("000000", sx, sy, 100, "left")
 
-  love.graphics.setFont(fonts.normal)
+  if all_players[2] then
+    love.graphics.setColor(96, 192, 192)
+    love.graphics.printf("000000", sx, sy + 30, 100, "left")
+
+    sy = sy + 30
+  end
+
   love.graphics.setColor(0, 0, 255)
-  love.graphics.printf("Lives:", sx - 110, 370, 100, "right")
+  love.graphics.printf("Lives:", sx - 110, sy + 40, 100, "right")
+
+  love.graphics.setColor(176, 176, 176)
+  love.graphics.printf(">  >  >", sx, sy + 40, 200, "left")
 end
 
 
