@@ -52,8 +52,8 @@ THRUST_VELOCITY = 500
 
 BOUNCE_FRICTION = 0.87
 
-PLAYER_MISSILE_SPEED = 500  / 25
-PLAYER_MISSILE_LEN = 20 * 2 
+PLAYER_MISSILE_SPEED = 500
+PLAYER_MISSILE_LEN = 20
 
 
 SHAPES =
@@ -200,11 +200,13 @@ end
 
 
 function draw_outer_edge(dir, x1, y1, x2, y2)
-  local qty = edges_hit[dir] + 1.0 - game_time
+  local TIME = 0.5
+
+  local qty = edges_hit[dir] + TIME - game_time
 
   if qty <= 0 then return end
 
-  qty = qty ^ 0.5
+  qty = (qty / TIME) ^ 0.9
 
   love.graphics.setColor(255*qty, 255*qty, 0)
   love.graphics.line(x1, y1, x2, y2)
@@ -260,7 +262,7 @@ function player_reset(p)
 
   p.r = 10  -- used for physics
 
-  p.shape = SHAPES.player2
+  p.shape = SHAPES.player1
 end
 
 
@@ -461,26 +463,24 @@ function move_player(p, dt)
 
   -- bounce off edges
 
-  -- FIXME : user OUTER_xxxx !!!
-
-  if p.x < p.r then
-    p.x = p.r + epsilon
+  if p.x < OUTER_X1 + p.r then
+    p.x = OUTER_X1 + p.r + epsilon
     p.vel_x = - p.vel_x * BOUNCE_FRICTION
     edges_hit[4] = game_time
 
-  elseif p.x > SCREEN_W - p.r then
-    p.x = SCREEN_W - p.r - epsilon
+  elseif p.x > OUTER_X2 - p.r then
+    p.x = OUTER_X2 - p.r - epsilon
     p.vel_x = - p.vel_x * BOUNCE_FRICTION
     edges_hit[6] = game_time
   end
 
-  if p.y < p.r then
-    p.y = p.r + epsilon
+  if p.y < OUTER_Y1 + p.r then
+    p.y = OUTER_Y1 + p.r + epsilon
     p.vel_y = - p.vel_y * BOUNCE_FRICTION
     edges_hit[8] = game_time
 
-  elseif p.y > SCREEN_H - p.r then
-    p.y = SCREEN_H - p.r - epsilon
+  elseif p.y > OUTER_Y2 - p.r then
+    p.y = OUTER_Y2 - p.r - epsilon
     p.vel_y = - p.vel_y * BOUNCE_FRICTION
     edges_hit[2] = game_time
   end
