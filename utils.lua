@@ -21,6 +21,13 @@ function geom.vec_len(x, y)
 end
 
 
+function geom.dist(x1, y1, x2, y2)
+  x1 = x1 - x2
+  y1 = y1 - y2
+  return math.sqrt(x1 * x1 + y1 * y1)
+end
+
+
 function geom.normalize(x, y)
   local len = geom.vec_len(x, y)
 
@@ -53,5 +60,18 @@ function geom.angle_diff(A, B)
   while D < -180 do D = D + 360 end
 
   return D
+end
+
+
+function geom.calc_angle(dx, dy)
+  if math.abs(dx) < 0.001 and math.abs(dy) < 0.001 then
+    return nil
+  end
+
+  local angle = math.atan2(-dy, dx) * 180 / math.pi
+
+  if angle < 0 then angle = angle + 360 end
+
+  return angle
 end
 
