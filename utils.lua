@@ -20,3 +20,14 @@ function geom.vec_len(x, y)
   return math.sqrt(x * x + y * y)
 end
 
+
+function geom.normalize(x, y)
+  local len = geom.vec_len(x, y)
+
+  if len < 0.001 then
+    return 0 , 0
+  end
+
+  return x / len , y / len
+end
+
