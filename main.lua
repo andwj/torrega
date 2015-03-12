@@ -59,7 +59,7 @@ inners_hit = {}
 --    x, y, vel_x, vel_y
 --    angle (in degrees)
 --    r (radius, for physics)
---    shape
+--    info
 --
 player = {}
 
@@ -127,12 +127,26 @@ PLAYER_INFO =
 }
 
 
+--
+-- enemy objects
+--
+-- Fields:
+--    x, y, angle, r, info
+--
+
+all_enemies = {}
+
 
 ENEMY_INFO =
 {
-
   drone =
   {
+    -- props --
+
+    hits = 1,
+
+    -- shape --
+
     r = 15,
 
     color = { 64,192,128 },
@@ -150,16 +164,6 @@ ENEMY_INFO =
     }
   },
 }
-
-
---
--- enemy objects
---
--- Fields:
---    x, y, angle, r, shape
---
-
-all_enemies = {}
 
 
 --
@@ -214,7 +218,7 @@ end
 
 
 function enemy_draw(e)
-  draw_shape(e.shape, e.x, e.y, e.angle)
+  draw_shape(e.info, e.x, e.y, e.angle)
 end
 
 
@@ -373,14 +377,41 @@ end
 
 
 
+function enemy_create_drone_path(ey)
+  -- creates a set of target points which drones follow
+
+  local y1 = INNER_Y2 + ey * 35
+  local y3 = INNER_Y1 - ey * 35
+
+  local x2 = INNER_X2 + ey * 40
+  local x4 = INNER_X1 - ey * 40
+
+  local x5 = SCREEN_W / 2
+
+  return
+  {
+    { x=x2, y=y1 },
+    { x=x2, y=y3 },
+    { x=x4, y=y3 },
+    { x=x4, y=y1 },
+    { x=x5, y=y1 }
+  }
+end
+
+
+
 function enemy_setup()
   all_enemies  = {}
 
-  for ex = 1, 5 do
   for ey = 1, 4 do
---    local e = enemy_spawn(INNER_X1 + ex * 50, INNER_Y2 + ey * 35, 0, 12, SHAPES.drone)
+    local path = enemy_create_drone_path(ey)
+    local y = path[1].y
 
-  end
+    for ex = 1, 5 do
+      local x = INNER_X1 + ex * 50
+
+      local e = enemy_spawn(x, y, 0, 12, ENEMY_INFO.drone)
+    end
   end
 end
 
