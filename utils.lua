@@ -31,3 +31,27 @@ function geom.normalize(x, y)
   return x / len , y / len
 end
 
+
+function geom.angle_add(A, B)
+  -- keeps result in range [0..360]
+  A = A + B
+
+  while A >= 360 do A = A - 360 end
+  while A <    0 do A = A + 360 end
+
+  return A
+end
+
+
+function geom.angle_diff(A, B)
+  -- A + result = B
+  -- result ranges from -180 to +180
+
+  local D = (B - A)
+
+  while D >  180 do D = D - 360 end
+  while D < -180 do D = D + 360 end
+
+  return D
+end
+
