@@ -52,6 +52,9 @@ THRUST_VELOCITY = 500
 
 BOUNCE_FRICTION = 0.87
 
+PLAYER_MISSILE_SPEED = 500  / 25
+PLAYER_MISSILE_LEN = 20 * 2 
+
 
 SHAPES =
 {
@@ -172,12 +175,12 @@ end
 function missile_draw(m)
   love.graphics.setColor(m.color[1], m.color[2], m.color[3])
 
-  local dx, dy = geom.ang_to_vec(m.angle, m.length)
+  local dx, dy = geom.normalize(m.vel_x, m.vel_y)
 
-  local x2 = m.x + dx
-  local y2 = m.y + dy
+  local end_x = m.x - dx * m.length
+  local end_y = m.y - dy * m.length
 
-  love.graphics.line(x2, y2, m.x, m.y)
+  love.graphics.line(end_x, end_y, m.x, m.y)
 end
 
 
@@ -220,7 +223,7 @@ end
 
 
 
-function enemy_create(x, y, angle, r, shape)
+function enemy_spawn(x, y, angle, r, shape)
   local e = {}
 
   e.kind = "enemy"
@@ -237,7 +240,7 @@ function enemy_create(x, y, angle, r, shape)
 end
 
 
-function missile_create(owner, x, y, angle, speed, color, target_length)
+function missile_spawn(owner, x, y, angle, speed, color, target_length)
   local m = {}
 
   m.kind  = "missile"
@@ -247,6 +250,8 @@ function missile_create(owner, x, y, angle, speed, color, target_length)
   m.y = y
 
   m.color  = color
+  m.speed  = speed
+
   m.length = 1
   m.target_length = target_length
 
@@ -254,6 +259,8 @@ function missile_create(owner, x, y, angle, speed, color, target_length)
 
   m.vel_x = dx
   m.vel_y = dy
+
+  table.insert(all_missiles, m)
 
   return m
 end
@@ -265,7 +272,7 @@ function enemy_reset()
 
   for ex = 1, 5 do
   for ey = 1, 4 do
-    local e = enemy_create(INNER_X1 + ex * 50, INNER_Y2 + ey * 35, 0, 12, SHAPES.drone)
+    local e = enemy_spawn(INNER_X1 + ex * 50, INNER_Y2 + ey * 35, 0, 12, SHAPES.drone)
 
   end
   end
@@ -291,10 +298,59 @@ end
 
 
 
-function player_fire(p)
+function missile_check_hit(x, y, old_x, old_y)
+  -- returns:
+  --    nil, nil     : hits nothing
+  --    "outer", dir : hits outer edge of map
+  --    "inner,  dir : hits inner box
+
+  if x < OUTER_X1 then return "outer", 4 end
+  if x > OUTER_X2 then return "outer", 6 end
+
+  if y < OUTER_Y1 then return "outer", 8 end
+  if y > OUTER_Y2 then return "outer", 2 end
+
+  if x < INNER_X1 then return nil end
+  if x > INNER_X2 then return nil end
+
+  if y < INNER_Y1 then return nil end
+  if y > INNER_Y2 then return nil end
+
+  -- hit inner box --
+
+  local A = (x < SCREEN_W / 2)
+  local B = (y < SCREEN_H / 2)
+
+
+  local old_inner_x = (INNER_X1 <= old_x and old_x <= INNER_X2)
+  local old_inner_y = (INNER_Y1 <= old_y and old_y <= INNER_Y2)
+
+  local inner_x = (INNER_X1 <= new_x and new_x <= INNER_X2)
+  local inner_y = (INNER_Y1 <= new_y and new_y <= INNER_Y2)
+end
+
+
+
+function fire_missile(p)
   local dx, dy = geom.ang_to_vec(p.angle)
 
-  -- FIXME
+  local x = p.x + p.shape.r * dx
+  local y = p.y + p.shape.r * dy
+
+  -- TODO : play a sound
+
+  -- don't spawn a missile if it is already off the map
+
+  local what, dir = missile_check_hit(x, y, p.x, p.y)
+
+  if what then
+    if what == "outer" then  edges_hit[dir] = game_time end
+    if what == "inner" then inners_hit[dir] = game_time end
+
+    return
+  end
+
+  local m = missile_spawn(p, x, y, p.angle, PLAYER_MISSILE_SPEED, p.shape.color, PLAYER_MISSILE_LEN)
 end
 
 
@@ -329,7 +385,7 @@ function player_input(p, dt)
     p.is_firing = fire
 
     if fire then
-      player_fire(p)
+      fire_missile(p)
     end
   end
 
@@ -431,39 +487,65 @@ end
 
 
 function move_enemy(e, dt)
+  if e.dead then return end
+
   -- TODO
 end
 
 
 
 function move_missile(m, dt)
+  if m.dead then return end
+
+  -- shrink length while dying
+  if m.dying then
+    m.length = m.length - m.speed * dt
+
+    if m.length <= 0 then
+      m.length = 0
+      m.dead = 1
+    end
+
+    return
+  end
+
+
+  -- grow missile after spawn
+  if m.length < m.target_length then
+    m.length = math.min(m.length + m.speed * dt, m.target_length)
+  end
+
+
   local old_x = m.x
   local old_y = m.y
 
   local new_x = m.x + m.vel_x * dt
   local new_y = m.y + m.vel_y * dt
 
-  local old_inner_x = (INNER_X1 <= old_x and old_x <= INNER_X2)
-  local old_inner_y = (INNER_Y1 <= old_y and old_y <= INNER_Y2)
 
-  local inner_x = (INNER_X1 <= new_x and new_x <= INNER_X2)
-  local inner_y = (INNER_Y1 <= new_y and new_y <= INNER_Y2)
+  -- check for collision with edges of map
+
+  local what, dir = missile_check_hit(new_x, new_y, old_x, old_y)
+
+  if what then
+    -- FIXME : move missile onto wall
+
+    if what == "outer" then  edges_hit[dir] = game_time end
+    if what == "inner" then inners_hit[dir] = game_time end
+
+    m.dying = true
+    return
+  end
 
 
   m.x = new_x
   m.y = new_y
 
-  -- collide with edge of map
 
-  -- FIXME
+  -- check for hitting a player or enemy ship
 
+  -- TODO
 
-  -- grow length
-  local vel_len = geom.vec_len(m.x - old_x, m.y - old_y)
-
-  if m.length < m.total_length then
-    m.length = math.min(m.length + vel_len, m.total_length)
-  end
 end
 
 
