@@ -145,6 +145,9 @@ ENEMY_INFO =
 
     hits = 1,
 
+    speed = 30,
+    turn_speed = 20,
+
     -- shape --
 
     r = 15,
@@ -346,6 +349,9 @@ function enemy_spawn(x, y, angle, r, info)
 
   table.insert(all_enemies, e)
 
+-- TEST
+e.target_angle = 170 + math.random() * 20
+
   return e
 end
 
@@ -404,13 +410,15 @@ function enemy_setup()
   all_enemies  = {}
 
   for ey = 1, 4 do
-    local path = enemy_create_drone_path(ey)
-    local y = path[1].y
-
     for ex = 1, 5 do
       local x = INNER_X1 + ex * 50
 
+      local path = enemy_create_drone_path(ey)
+      local y = path[1].y
+
       local e = enemy_spawn(x, y, 0, 12, ENEMY_INFO.drone)
+
+      e.path = path
     end
   end
 end
@@ -512,9 +520,9 @@ function player_input(p, dt)
   if turn_left and turn_right then
     -- do nothing if both are pressed
   elseif turn_left then
-    p.angle = p.angle + p.info.turn_speed * dt
+    p.angle = geom.angle_add(p.angle,   p.info.turn_speed * dt)
   elseif turn_right then
-    p.angle = p.angle - p.info.turn_speed * dt
+    p.angle = geom.angle_add(p.angle, - p.info.turn_speed * dt)
   end
 
 
@@ -542,7 +550,7 @@ end
 
 
 
-function move_player(p, dt)
+function player_move(p, dt)
   -- p can be a player or enemy ship
 
   local old_inside_x = (INNER_X1 - p.r <= p.x) and (p.x <= INNER_X2 + p.r)
@@ -642,15 +650,40 @@ end
 
 
 
-function move_enemy(e, dt)
+function enemy_move(e, dt)
   if e.dead then return end
 
-  -- TODO
+  -- turning?
+  if e.target_angle then
+    local diff = geom.angle_diff(e.angle, e.target_angle)
+
+    local turn = e.info.turn_speed * dt
+
+    if math.abs(diff) <= math.abs(turn) then
+      -- reached it
+      e.angle = e.target_angle
+      e.target_angle = nil
+    else
+      if diff < 0 then turn = -turn end
+
+      e.angle = geom.angle_add(e.angle, turn)
+    end
+  end
+
+
+  -- follow a path?
+  if e.path then
+
+    
+    
+  end
+
+  -- TODO : other kinds of movement
 end
 
 
 
-function move_missile(m, dt)
+function missile_move(m, dt)
   if m.dead then return end
 
   -- shrink length while dying
@@ -710,17 +743,17 @@ function run_physics(dt)
 
   if player.health > 0 then
     player_input(player, dt)
-    move_player(player, dt)
+    player_move(player, dt)
   end
 
   for i = 1, #all_enemies do
-    move_enemy(all_enemies[i], dt)
+    enemy_move(all_enemies[i], dt)
   end
 
   -- missiles will hit stuff now
 
   for i = 1, #all_missiles do
-    move_missile(all_missiles[i], dt)
+    missile_move(all_missiles[i], dt)
   end
 end
 
