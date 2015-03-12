@@ -146,7 +146,7 @@ ENEMY_INFO =
     hits = 1,
 
     speed = 30,
-    turn_speed = 20,
+    turn_speed = 120,
 
     -- shape --
 
@@ -765,7 +765,11 @@ end
 
 
 function draw_ui()
-  love.graphics.setColor(104, 160, 255)
+  if game_started then
+    love.graphics.setColor(0, 0, 255)
+  else
+    love.graphics.setColor(104, 160, 255)
+  end
 
   love.graphics.setFont(fonts.title)
   love.graphics.printf("Torrega Race", 250, 250, 300, "center")
@@ -773,6 +777,7 @@ function draw_ui()
   if game_started then
 
   else
+    love.graphics.setColor(0, 0, 255)
     love.graphics.setFont(fonts.credit)
     love.graphics.printf("by Andrew Apted", 250, 310, 300, "center")
 
