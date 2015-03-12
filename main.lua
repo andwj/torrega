@@ -6,13 +6,26 @@
 --
 
 
+SCREEN_W = 800
+SCREEN_H = 600
+
+INNER_W  = 300
+INNER_H  = 200
+
+
+-- indexed by DIR (2, 4, 6 or 8)
+edges_hit  = { }
+inners_hit = { }
+
+
 player =
 {
   -- Fields:
   --    health
   --    x, y, vel_x, vel_y
   --    angle (in degrees)
-  --    r (radius)
+  --    r (radius, physics)
+  --    r2 (radius to draw)
 }
 
 TURN_SPEED = 240
@@ -22,37 +35,82 @@ THRUST_VELOCITY = 300
 BOUNCE_FRICTION = 0.95
 
 
-SCREEN_W = 800
-SCREEN_H = 600
+SHAPES =
+{
+  player1 =
+  {
+    color = { 255,255,255 },
 
-INNER_W  = 300
-INNER_H  = 200
+    lines =
+    {
+      { -140, 1.00 },
+      {    0, 1.00 },
+      {  140, 1.00 }
+    }
+  },
 
--- indexed by DIR (2, 4, 6 or 8)
-edges_hit  = { }
-inners_hit = { }
+  player2 =
+  {
+    color = { 0,255,255 },
 
+    lines =
+    {
+      { -140, 1.00 },
+      {    0, 1.00 },
+      {  140, 1.00 }
+    }
+  },
+
+  drone =
+  {
+    color = { 64,192,128 },
+
+    lines =
+    {
+      { -180, 0.20 },
+      { -120, 1.00 },
+      {  -60, 1.00 },
+      {    0, 1.00 },
+      {   60, 1.00 },
+      {  120, 1.00 }
+    }
+  },
+}
 
 
 ------ RENDERING ---------------------
 
 
+function draw_shape(sh, base_x, base_y, base_r, base_angle)
+  love.graphics.setColor(sh.color[1], sh.color[2], sh.color[3])
+
+  local last_x
+  local last_y
+
+  for i = 1, #sh.lines do
+    local point = sh.lines[i]
+
+    local ang = base_angle + point[1]
+    local r   = base_r     * point[2]
+
+    local x = base_x + math.cos(ang * math.pi / 180.0) * r
+    local y = base_y - math.sin(ang * math.pi / 180.0) * r
+
+    if last_x then
+      love.graphics.line(last_x, last_y, x, y)
+    end
+
+    last_x = x
+    last_y = y
+  end
+end
+
+
+
 function player_draw(p)
-  local dx1 =  math.cos((p.angle + 140) * math.pi / 180.0)
-  local dy1 = -math.sin((p.angle + 140) * math.pi / 180.0)
+  local sh = p.shape
 
-  local dx2 =  math.cos(p.angle * math.pi / 180.0)
-  local dy2 = -math.sin(p.angle * math.pi / 180.0)
-
-  local dx3 =  math.cos((p.angle - 140) * math.pi / 180.0)
-  local dy3 = -math.sin((p.angle - 140) * math.pi / 180.0)
-
-  love.graphics.setColor(255,255,255)
-
-  love.graphics.line(
-    p.x + p.r2 * dx1, p.y + p.r2 * dy1,
-    p.x + p.r2 * dx2, p.y + p.r2 * dy2,
-    p.x + p.r2 * dx3, p.y + p.r2 * dy3)
+  draw_shape(sh, p.x, p.y, p.r2, p.angle)
 end
 
 
@@ -73,6 +131,8 @@ function player_reset(p)
 
   p.r  = 10  -- used for physics
   p.r2 = 15  -- used for drawing
+
+  p.shape = SHAPES.player1
 end
 
 
