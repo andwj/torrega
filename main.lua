@@ -4,6 +4,8 @@
 --
 --  by Andrew Apted
 --
+--  under the GNU GPLv3 (or later) license
+--
 
 
 SCREEN_W = 800
@@ -24,8 +26,7 @@ player =
   --    health
   --    x, y, vel_x, vel_y
   --    angle (in degrees)
-  --    r (radius, physics)
-  --    r2 (radius to draw)
+  --    r (radius, for physics)
 }
 
 TURN_SPEED = 240
@@ -39,6 +40,8 @@ SHAPES =
 {
   player1 =
   {
+    r = 15,
+
     color = { 255,255,255 },
 
     lines =
@@ -51,7 +54,9 @@ SHAPES =
 
   player2 =
   {
-    color = { 0,255,255 },
+    r = 15,
+
+    color = { 85,255,255 },
 
     lines =
     {
@@ -63,25 +68,37 @@ SHAPES =
 
   drone =
   {
+    r = 15,
+
     color = { 64,192,128 },
 
     lines =
     {
-      { -180, 0.20 },
-      { -120, 1.00 },
-      {  -60, 1.00 },
-      {    0, 1.00 },
-      {   60, 1.00 },
-      {  120, 1.00 }
+      { -180, 0.00 },
+      { -140, 1.00 },
+      {  -70, 1.00 },
+      {  -20, 1.00 },
+      {   20, 1.00 },
+      {   70, 1.00 },
+      {  140, 1.00 },
+      {  180, 0.00 }
     }
   },
 }
 
 
+-- enemy class
+--
+-- Fields:
+
+all_enemies = {}
+
+
+
 ------ RENDERING ---------------------
 
 
-function draw_shape(sh, base_x, base_y, base_r, base_angle)
+function draw_shape(sh, base_x, base_y, base_angle)
   love.graphics.setColor(sh.color[1], sh.color[2], sh.color[3])
 
   local last_x
@@ -91,7 +108,7 @@ function draw_shape(sh, base_x, base_y, base_r, base_angle)
     local point = sh.lines[i]
 
     local ang = base_angle + point[1]
-    local r   = base_r     * point[2]
+    local r   = sh.r       * point[2]
 
     local x = base_x + math.cos(ang * math.pi / 180.0) * r
     local y = base_y - math.sin(ang * math.pi / 180.0) * r
@@ -108,9 +125,23 @@ end
 
 
 function player_draw(p)
-  local sh = p.shape
+  draw_shape(p.shape, p.x, p.y, p.angle)
+end
 
-  draw_shape(sh, p.x, p.y, p.r2, p.angle)
+
+
+function enemy_draw(e)
+  draw_shape(e.shape, e.x, e.y, e.angle)
+end
+
+
+
+function draw_all_entities()
+  for i = 1, #all_enemies do
+    enemy_draw(all_enemies[i])
+  end
+
+  player_draw(player)
 end
 
 
@@ -129,10 +160,38 @@ function player_reset(p)
 
   p.angle = 0
 
-  p.r  = 10  -- used for physics
-  p.r2 = 15  -- used for drawing
+  p.r = 10  -- used for physics
 
-  p.shape = SHAPES.player1
+  p.shape = SHAPES.player2
+end
+
+
+
+function enemy_create(x, y, angle, r, shape)
+  local e = {}
+
+  e.x = x
+  e.y = y
+  e.angle = angle
+  e.shape = shape
+  e.r = r
+
+  table.insert(all_enemies, e)
+
+  return e
+end
+
+
+
+function enemy_reset()
+  all_enemies = {}
+
+  for ex = 1, 5 do
+  for ey = 1, 4 do
+    local e = enemy_create(INNER_X + ex * 50, INNER_Y2 + ey * 35, 0, 12, SHAPES.drone)
+
+  end
+  end
 end
 
 
@@ -141,12 +200,14 @@ function game_reset()
   game_time  = 0
   delta_time = 0
 
-  player_reset(player)
-
   for dir = 2,8,2 do
     edges_hit[dir]  = -2
     inners_hit[dir] = -2
   end
+
+  player_reset(player)
+
+  enemy_reset()
 end
 
 
@@ -287,6 +348,20 @@ end
 
 
 ------------------------------------------------------------------------
+--  UI STUFF (Menu, Score, etc)
+------------------------------------------------------------------------
+
+
+function draw_ui()
+
+  -- TEMP CRUD
+  love.graphics.setColor(255,255,0)
+  love.graphics.print(math.floor(game_time), 700, 10)
+end
+
+
+
+------------------------------------------------------------------------
 --  CALLBACKS
 ------------------------------------------------------------------------
 
@@ -360,8 +435,6 @@ end
 
 
 function love.draw()
-  player_draw(player)
-
   -- draw outer edges (when hit)
 
   draw_edge(2, 1, SCREEN_H-1, SCREEN_W-1, SCREEN_H-1)
@@ -376,9 +449,12 @@ function love.draw()
   draw_inner_edge(4, INNER_X,  INNER_Y,  INNER_X,  INNER_Y2)
   draw_inner_edge(6, INNER_X2, INNER_Y,  INNER_X2, INNER_Y2)
 
-  -- score etc  (FIXME)
+  -- entities (player, enemies, missiles, etc)
 
-  love.graphics.setColor(255,255,0)
-  love.graphics.print(math.floor(game_time), 700, 10)
+  draw_all_entities()
+
+  -- user interface
+
+  draw_ui()
 end
 
