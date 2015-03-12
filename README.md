@@ -2,7 +2,9 @@ Torrega Race
 ============
 
 This is a simple space shoot-em-up game,
-inspired by the classic game Omega Race.
+inspired by the classic game "Omega Race"
+but it won't be a strict clone of it
+(e.g. different enemies).
 
 It is written in Lua using the LÖVE framework.
 
