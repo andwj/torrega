@@ -660,7 +660,30 @@ function player_move(p, dt)
   end
 
 
-  -- TODO : players bouncing off each other
+  -- FIXME : hitting an enemy ship
+
+
+  -- players bouncing off each other
+
+  for i = 1, #all_players do
+    local p2 = all_players[i]
+    if p2 ~= p then
+      local dx = p2.x - p.x
+      local dy = p2.y - p.y
+
+      local dist = p.r * 3 - geom.vec_len(dx, dy)
+
+      if dist > 0 then
+        -- circles intersect : apply a repulsive force
+        local repulse = dist * 1000 * dt
+
+        local nx, ny = geom.normalize(dx, dy)
+
+        p.vel_x = p.vel_x - nx * repulse
+        p.vel_y = p.vel_y - ny * repulse
+      end
+    end
+  end
 end
 
 
