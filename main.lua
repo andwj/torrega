@@ -70,8 +70,16 @@ PLAYER_INFO =
   {
     -- props --
 
-    spawn_x = 50,
+    spawn_x = 100,
     spawn_y = 100,
+
+    turn_speed = 240,
+
+    thrust_velocity = 500,
+    bounce_friction = 0.88,
+
+    missile_speed = 500,
+    missile_len = 20,
 
     -- shape --
 
@@ -86,23 +94,25 @@ PLAYER_INFO =
       {  140, 1.00 }
     }
   },
-}
 
 
-PLAYER_TURN_SPEED = 240
-
-THRUST_VELOCITY = 500
-
-BOUNCE_FRICTION = 0.87
-
-PLAYER_MISSILE_SPEED = 500
-PLAYER_MISSILE_LEN = 20
-
-
-SHAPES =
-{
   player2 =
   {
+    -- props --
+
+    spawn_x = 80,
+    spawn_y = 140,
+
+    turn_speed = 240,
+
+    thrust_velocity = 500,
+    bounce_friction = 0.88,
+
+    missile_speed = 500,
+    missile_len = 20,
+
+    -- shape --
+
     r = 15,
 
     color = { 85,255,255 },
@@ -114,6 +124,12 @@ SHAPES =
       {  140, 1.00 }
     }
   },
+}
+
+
+
+ENEMY_INFO =
+{
 
   drone =
   {
@@ -313,15 +329,15 @@ end
 
 
 
-function enemy_spawn(x, y, angle, r, shape)
+function enemy_spawn(x, y, angle, r, info)
   local e = {}
 
   e.kind = "enemy"
+  e.info = info
 
   e.x = x
   e.y = y
   e.angle = angle
-  e.shape = shape
   e.r = r
 
   table.insert(all_enemies, e)
@@ -362,7 +378,7 @@ function enemy_setup()
 
   for ex = 1, 5 do
   for ey = 1, 4 do
-    local e = enemy_spawn(INNER_X1 + ex * 50, INNER_Y2 + ey * 35, 0, 12, SHAPES.drone)
+--    local e = enemy_spawn(INNER_X1 + ex * 50, INNER_Y2 + ey * 35, 0, 12, SHAPES.drone)
 
   end
   end
@@ -453,7 +469,7 @@ function fire_missile(p)
     return
   end
 
-  local m = missile_spawn(p, x, y, p.angle, PLAYER_MISSILE_SPEED, p.info.color, PLAYER_MISSILE_LEN)
+  local m = missile_spawn(p, x, y, p.angle, p.info.missile_speed, p.info.color, p.info.missile_len)
 end
 
 
@@ -465,16 +481,16 @@ function player_input(p, dt)
   if turn_left and turn_right then
     -- do nothing if both are pressed
   elseif turn_left then
-    p.angle = p.angle + PLAYER_TURN_SPEED * dt
+    p.angle = p.angle + p.info.turn_speed * dt
   elseif turn_right then
-    p.angle = p.angle - PLAYER_TURN_SPEED * dt
+    p.angle = p.angle - p.info.turn_speed * dt
   end
 
 
   local thrust = love.keyboard.isDown("up") or love.keyboard.isDown("w")
 
   if thrust then
-    local dx, dy = geom.ang_to_vec(p.angle, THRUST_VELOCITY * dt)
+    local dx, dy = geom.ang_to_vec(p.angle, p.info.thrust_velocity * dt)
 
     p.vel_x = p.vel_x + dx
     p.vel_y = p.vel_y + dy
@@ -491,8 +507,6 @@ function player_input(p, dt)
       fire_missile(p)
     end
   end
-
-  -- TODO : firing
 end
 
 
@@ -511,26 +525,32 @@ function move_player(p, dt)
 
   -- bounce off edges
 
+  local bounce_friction = p.info.bounce_friction
+
   if p.x < OUTER_X1 + p.r then
     p.x = OUTER_X1 + p.r + epsilon
-    p.vel_x = - p.vel_x * BOUNCE_FRICTION
+    p.vel_x = - p.vel_x * bounce_friction
     edges_hit[4] = game_time
+    return
 
   elseif p.x > OUTER_X2 - p.r then
     p.x = OUTER_X2 - p.r - epsilon
-    p.vel_x = - p.vel_x * BOUNCE_FRICTION
+    p.vel_x = - p.vel_x * bounce_friction
     edges_hit[6] = game_time
+    return
   end
 
   if p.y < OUTER_Y1 + p.r then
     p.y = OUTER_Y1 + p.r + epsilon
-    p.vel_y = - p.vel_y * BOUNCE_FRICTION
+    p.vel_y = - p.vel_y * bounce_friction
     edges_hit[8] = game_time
+    return
 
   elseif p.y > OUTER_Y2 - p.r then
     p.y = OUTER_Y2 - p.r - epsilon
-    p.vel_y = - p.vel_y * BOUNCE_FRICTION
+    p.vel_y = - p.vel_y * bounce_friction
     edges_hit[2] = game_time
+    return
   end
 
   -- bounce off inner box
@@ -556,12 +576,12 @@ function move_player(p, dt)
     if way == "x" then
       if p.x > SCREEN_W/2 then
         p.x = INNER_X2 + p.r + epsilon
-        p.vel_x = - p.vel_x * BOUNCE_FRICTION
+        p.vel_x = - p.vel_x * bounce_friction
         p.vel_x = math.max(-0.1, p.vel_x)
         inners_hit[6] = game_time
       else
         p.x = INNER_X1 - p.r - epsilon
-        p.vel_x = - p.vel_x * BOUNCE_FRICTION
+        p.vel_x = - p.vel_x * bounce_friction
         p.vel_x = math.min(0.1, p.vel_x)
         inners_hit[4] = game_time
       end
@@ -570,19 +590,23 @@ function move_player(p, dt)
 
       if p.y > SCREEN_H/2 then
         p.y = INNER_Y2 + p.r + epsilon
-        p.vel_y = - p.vel_y * BOUNCE_FRICTION
+        p.vel_y = - p.vel_y * bounce_friction
         p.vel_y = math.max(-0.1, p.vel_y)
         inners_hit[2] = game_time
       else
         p.y = INNER_Y1 - p.r + epsilon
-        p.vel_y = - p.vel_y * BOUNCE_FRICTION
+        p.vel_y = - p.vel_y * bounce_friction
         p.vel_y = math.min(0.1, p.vel_y)
         inners_hit[8] = game_time
       end
 
     end
 
+    return
   end
+
+
+  -- TODO : players bouncing off each other
 end
 
 
