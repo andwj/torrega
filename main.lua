@@ -145,8 +145,8 @@ ENEMY_INFO =
 
     hits = 1,
 
-    speed = 30,
-    turn_speed = 120,
+    speed = 100,
+    turn_speed = 360,
 
     -- shape --
 
@@ -349,9 +349,6 @@ function enemy_spawn(x, y, angle, r, info)
 
   table.insert(all_enemies, e)
 
--- TEST
-e.target_angle = 170 + math.random() * 20
-
   return e
 end
 
@@ -417,6 +414,8 @@ function enemy_setup()
       local y = path[1].y
 
       local e = enemy_spawn(x, y, 0, 12, ENEMY_INFO.drone)
+
+      e.speed = e.info.speed ---  * (1.0 + (ey - 1) / 4)
 
       e.path = path
     end
@@ -668,17 +667,51 @@ function enemy_move(e, dt)
 
       e.angle = geom.angle_add(e.angle, turn)
     end
+
+    return
   end
 
 
   -- follow a path?
   if e.path then
+    local move_dist = e.speed * dt
 
-    
-    
+    local dx = e.path[1].x - e.x
+    local dy = e.path[1].y - e.y
+
+    local dist = geom.vec_len(dx, dy)
+
+    -- reached target?
+    if dist <= move_dist then
+
+      e.x = e.path[1].x
+      e.y = e.path[1].y
+
+      table.remove(e.path, 1)
+
+      if e.path[1] == nil then
+        -- reached end of path
+        e.path = nil
+        return
+      end
+
+      -- begin turning to face next point
+      e.target_angle = geom.calc_angle(e.path[1].x - e.x, e.path[1].y - e.y)
+      return
+    end
+
+    local nx, ny = geom.normalize(dx, dy)
+
+    e.x = e.x + nx * move_dist
+    e.y = e.y + ny * move_dist
+
+    return
   end
 
+
   -- TODO : other kinds of movement
+
+  e.angle = geom.angle_add(e.angle, 360 * dt)
 end
 
 
