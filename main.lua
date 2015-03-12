@@ -34,6 +34,8 @@ INNER_Y2 = 0
 game_time  = 0
 delta_time = 0
 
+game_started = false
+
 
 fonts =
 {
@@ -61,6 +63,32 @@ inners_hit = {}
 --
 player = {}
 
+
+PLAYER_INFO =
+{
+  player1 =
+  {
+    -- props --
+
+    spawn_x = 50,
+    spawn_y = 100,
+
+    -- shape --
+
+    r = 15,
+
+    color = { 255,255,255 },
+
+    lines =
+    {
+      { -140, 1.00 },
+      {    0, 1.00 },
+      {  140, 1.00 }
+    }
+  },
+}
+
+
 PLAYER_TURN_SPEED = 240
 
 THRUST_VELOCITY = 500
@@ -73,20 +101,6 @@ PLAYER_MISSILE_LEN = 20
 
 SHAPES =
 {
-  player1 =
-  {
-    r = 15,
-
-    color = { 255,255,255 },
-
-    lines =
-    {
-      { -140, 1.00 },
-      {    0, 1.00 },
-      {  140, 1.00 }
-    }
-  },
-
   player2 =
   {
     r = 15,
@@ -178,7 +192,7 @@ end
 
 
 function player_draw(p)
-  draw_shape(p.shape, p.x, p.y, p.angle)
+  draw_shape(p.info, p.x, p.y, p.angle)
 end
 
 
@@ -203,6 +217,11 @@ end
 
 
 function draw_all_entities()
+  if not game_started then
+    -- FIXME
+    return
+  end
+
   for i = 1, #all_missiles do
     missile_draw(all_missiles[i])
   end
@@ -231,7 +250,13 @@ end
 
 
 function draw_inner_edge(dir, x1, y1, x2, y2)
-  local qty = inners_hit[dir] + 1.0 - game_time
+  local qty
+
+  if game_started then
+    qty = inners_hit[dir] + 1.0 - game_time
+  else
+    qty = 0
+  end
 
   if qty <= 0 then qty = 0 end
 
@@ -245,10 +270,12 @@ end
 function draw_map_edges()
   -- draw outer edges (only when hit)
 
-  draw_outer_edge(2, OUTER_X1, OUTER_Y2, OUTER_X2, OUTER_Y2)
-  draw_outer_edge(8, OUTER_X1, OUTER_Y1, OUTER_X2, OUTER_Y1)
-  draw_outer_edge(4, OUTER_X1, OUTER_Y1, OUTER_X1, OUTER_Y2)
-  draw_outer_edge(6, OUTER_X2, OUTER_Y1, OUTER_X2, OUTER_Y2)
+  if game_started then
+    draw_outer_edge(2, OUTER_X1, OUTER_Y2, OUTER_X2, OUTER_Y2)
+    draw_outer_edge(8, OUTER_X1, OUTER_Y1, OUTER_X2, OUTER_Y1)
+    draw_outer_edge(4, OUTER_X1, OUTER_Y1, OUTER_X1, OUTER_Y2)
+    draw_outer_edge(6, OUTER_X2, OUTER_Y1, OUTER_X2, OUTER_Y2)
+  end
 
   -- draw the inner box
 
@@ -263,14 +290,15 @@ end
 ------ PHYSICS ---------------------
 
 
-function player_reset(p)
+function player_setup(p, info)
   p.kind = "player"
+  p.info = info
 
   p.health = 100
   p.score  = 0
 
-  p.x = 50
-  p.y = 100
+  p.x = info.spawn_x
+  p.y = info.spawn_y
 
   p.vel_x = 0
   p.vel_y = 0
@@ -279,7 +307,8 @@ function player_reset(p)
 
   p.r = 10  -- used for physics
 
-  p.shape = SHAPES.player1
+  -- prevent firing immediately on game start (bit of a hack)
+  p.is_firing = true
 end
 
 
@@ -328,7 +357,7 @@ end
 
 
 
-function enemy_reset()
+function enemy_setup()
   all_enemies  = {}
 
   for ex = 1, 5 do
@@ -341,7 +370,9 @@ end
 
 
 
-function game_reset()
+function game_setup()
+  game_started = true
+
   game_time  = 0
   delta_time = 0
 
@@ -352,9 +383,9 @@ function game_reset()
 
   all_missiles = {}
 
-  player_reset(player)
+  player_setup(player, PLAYER_INFO.player1)
 
-  enemy_reset()
+  enemy_setup()
 end
 
 
@@ -406,8 +437,8 @@ end
 function fire_missile(p)
   local dx, dy = geom.ang_to_vec(p.angle)
 
-  local x = p.x + p.shape.r * dx
-  local y = p.y + p.shape.r * dy
+  local x = p.x + p.info.r * dx
+  local y = p.y + p.info.r * dy
 
   -- TODO : play a sound
 
@@ -422,7 +453,7 @@ function fire_missile(p)
     return
   end
 
-  local m = missile_spawn(p, x, y, p.angle, PLAYER_MISSILE_SPEED, p.shape.color, PLAYER_MISSILE_LEN)
+  local m = missile_spawn(p, x, y, p.angle, PLAYER_MISSILE_SPEED, p.info.color, PLAYER_MISSILE_LEN)
 end
 
 
@@ -646,22 +677,25 @@ end
 
 
 function draw_ui()
-  if true then
-    love.graphics.setColor(104, 160, 255)
+  love.graphics.setColor(104, 160, 255)
 
-    love.graphics.setFont(fonts.title)
-    love.graphics.printf("Torrega Race", 250, 250, 300, "center")
+  love.graphics.setFont(fonts.title)
+  love.graphics.printf("Torrega Race", 250, 250, 300, "center")
 
+  if game_started then
+
+  else
     love.graphics.setFont(fonts.credit)
     love.graphics.printf("by Andrew Apted", 250, 310, 300, "center")
 
-    love.graphics.setColor(216, 216, 216)
-
     love.graphics.setFont(fonts.normal)
+    love.graphics.setColor(216, 216, 216)
     love.graphics.printf("press SPACE to start", 300, 450, 300, "left")
-    love.graphics.printf("press ESC to quit",    300, 490, 300, "left")
-  end
 
+    love.graphics.setColor(176, 176, 176)
+    love.graphics.printf("press ESC to quit",    300, 490, 300, "left")
+    love.graphics.printf("press O for options",  300, 530, 300, "left")
+  end
 end
 
 
@@ -695,23 +729,29 @@ function love.load()
   OUTER_Y1 = BORDER
   OUTER_X2 = SCREEN_W - BORDER
   OUTER_Y2 = SCREEN_H - BORDER
-
-  game_reset()
 end
 
 
 
 function love.update(dt)
-  game_time = game_time + dt
+  if game_started then
+    game_time = game_time + dt
 
-  delta_time = delta_time + dt
+    delta_time = delta_time + dt
 
-  while delta_time >= FRAME_TIME do
-    run_physics(FRAME_TIME)
+    while delta_time >= FRAME_TIME do
+      run_physics(FRAME_TIME)
 
-    delta_time = delta_time - FRAME_TIME
+      delta_time = delta_time - FRAME_TIME
+    end
+
+  else
+    if love.keyboard.isDown(" ") then
+      game_setup()
+    end
   end
 
+  -- this can be used anywhere
   if love.keyboard.isDown("escape") then
     love.event.push("quit")
   end
