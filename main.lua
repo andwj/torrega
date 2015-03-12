@@ -31,22 +31,37 @@ INNER_X2 = 0
 INNER_Y2 = 0
 
 
+game_time  = 0
+delta_time = 0
+
+
+fonts =
+{
+  -- title
+  -- credit
+  -- normal
+  -- score
+}
+
+
 -- indexed by DIR (2, 4, 6 or 8)
 edges_hit  = {}
 inners_hit = {}
 
 
-player =
-{
-  -- Fields:
-  --    health
-  --    x, y, vel_x, vel_y
-  --    angle (in degrees)
-  --    r (radius, for physics)
-  --    shape
-}
+--
+-- player object(s)
+--
+-- Fields:
+--    health
+--    x, y, vel_x, vel_y
+--    angle (in degrees)
+--    r (radius, for physics)
+--    shape
+--
+player = {}
 
-TURN_SPEED = 240
+PLAYER_TURN_SPEED = 240
 
 THRUST_VELOCITY = 500
 
@@ -107,7 +122,8 @@ SHAPES =
 }
 
 
--- enemy class
+--
+-- enemy objects
 --
 -- Fields:
 --    x, y, angle, r, shape
@@ -116,7 +132,8 @@ SHAPES =
 all_enemies = {}
 
 
--- missile class
+--
+-- missile objects
 --
 -- Fields:
 --    x, y, angle
@@ -417,9 +434,9 @@ function player_input(p, dt)
   if turn_left and turn_right then
     -- do nothing if both are pressed
   elseif turn_left then
-    p.angle = p.angle + TURN_SPEED * dt
+    p.angle = p.angle + PLAYER_TURN_SPEED * dt
   elseif turn_right then
-    p.angle = p.angle - TURN_SPEED * dt
+    p.angle = p.angle - PLAYER_TURN_SPEED * dt
   end
 
 
@@ -629,10 +646,22 @@ end
 
 
 function draw_ui()
+  if true then
+    love.graphics.setColor(104, 160, 255)
 
-  -- TEMP CRUD
-  love.graphics.setColor(255,255,0)
-  love.graphics.print(math.floor(game_time), 700, 10)
+    love.graphics.setFont(fonts.title)
+    love.graphics.printf("Torrega Race", 250, 250, 300, "center")
+
+    love.graphics.setFont(fonts.credit)
+    love.graphics.printf("by Andrew Apted", 250, 310, 300, "center")
+
+    love.graphics.setColor(216, 216, 216)
+
+    love.graphics.setFont(fonts.normal)
+    love.graphics.printf("press SPACE to start", 300, 450, 300, "left")
+    love.graphics.printf("press ESC to quit",    300, 490, 300, "left")
+  end
+
 end
 
 
@@ -642,16 +671,17 @@ end
 ------------------------------------------------------------------------
 
 
-game_time  = 0
-delta_time = 0
-
 FRAME_TIME = (1 / 100)
 
 
 function love.load()
   love.graphics.setColor(255,255,255)
   love.graphics.setBackgroundColor(0,0,0)
-  love.graphics.setNewFont(20)
+
+  fonts.title  = love.graphics.setNewFont(36)
+  fonts.credit = love.graphics.setNewFont(24)
+  fonts.score  = love.graphics.setNewFont(30)
+  fonts.normal = love.graphics.setNewFont(20)
 
   love.window.setMode(800, 600, {fullscreen=false})
   love.window.setTitle("Torrega Race")
@@ -686,9 +716,6 @@ function love.update(dt)
     love.event.push("quit")
   end
 end
-
-
-
 
 
 
