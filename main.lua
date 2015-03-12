@@ -199,6 +199,48 @@ end
 
 
 
+function draw_outer_edge(dir, x1, y1, x2, y2)
+  local qty = edges_hit[dir] + 1.0 - game_time
+
+  if qty <= 0 then return end
+
+  qty = qty ^ 0.5
+
+  love.graphics.setColor(255*qty, 255*qty, 0)
+  love.graphics.line(x1, y1, x2, y2)
+end
+
+
+function draw_inner_edge(dir, x1, y1, x2, y2)
+  local qty = inners_hit[dir] + 1.0 - game_time
+
+  if qty <= 0 then qty = 0 end
+
+  qty = qty ^ 0.5
+
+  love.graphics.setColor(255*qty, 255*qty, 255*(1-qty))
+  love.graphics.line(x1, y1, x2, y2)
+end
+
+
+function draw_map_edges()
+  -- draw outer edges (only when hit)
+
+  draw_outer_edge(2, OUTER_X1, OUTER_Y2, OUTER_X2, OUTER_Y2)
+  draw_outer_edge(8, OUTER_X1, OUTER_Y1, OUTER_X2, OUTER_Y1)
+  draw_outer_edge(4, OUTER_X1, OUTER_Y1, OUTER_X1, OUTER_Y2)
+  draw_outer_edge(6, OUTER_X2, OUTER_Y1, OUTER_X2, OUTER_Y2)
+
+  -- draw the inner box
+
+  draw_inner_edge(2, INNER_X1, INNER_Y2, INNER_X2, INNER_Y2)
+  draw_inner_edge(8, INNER_X1, INNER_Y1, INNER_X2, INNER_Y1)
+  draw_inner_edge(4, INNER_X1, INNER_Y1, INNER_X1, INNER_Y2)
+  draw_inner_edge(6, INNER_X2, INNER_Y1, INNER_X2, INNER_Y2)
+end
+
+
+
 ------ PHYSICS ---------------------
 
 
@@ -318,15 +360,26 @@ function missile_check_hit(x, y, old_x, old_y)
 
   -- hit inner box --
 
-  local A = (x < SCREEN_W / 2)
-  local B = (y < SCREEN_H / 2)
+  if old_x < INNER_X1 then return "inner", 4 end
+  if old_x > INNER_X2 then return "inner", 6 end
 
+  if old_y < INNER_Y1 then return "inner", 8 end
+  if old_y > INNER_Y2 then return "inner", 2 end
 
-  local old_inner_x = (INNER_X1 <= old_x and old_x <= INNER_X2)
-  local old_inner_y = (INNER_Y1 <= old_y and old_y <= INNER_Y2)
+  -- fallback
 
-  local inner_x = (INNER_X1 <= new_x and new_x <= INNER_X2)
-  local inner_y = (INNER_Y1 <= new_y and new_y <= INNER_Y2)
+  local d1 = math.abs(x - INNER_X1)
+  local d2 = math.abs(x - INNER_X2)
+  local d3 = math.abs(y - INNER_Y1)
+  local d4 = math.abs(y - INNER_Y2)
+
+  if d1 < math.min(d2, d3, d4) then return "inner", 4 end
+  if d2 < math.min(d1, d3, d4) then return "inner", 6 end
+  if d3 < math.min(d1, d2, d4) then return "inner", 8 end
+  if d4 < math.min(d1, d2, d3) then return "inner", 2 end
+
+  -- oops
+  return "inner", 4
 end
 
 
@@ -636,52 +689,12 @@ end
 
 
 
-local function draw_outer_edge(dir, x1, y1, x2, y2)
-  local qty = edges_hit[dir] + 1.0 - game_time
-
-  if qty <= 0 then return end
-
-  qty = qty ^ 0.5
-
-  love.graphics.setColor(255*qty, 255*qty, 0)
-  love.graphics.line(x1, y1, x2, y2)
-end
-
-
-local function draw_inner_edge(dir, x1, y1, x2, y2)
-  local qty = inners_hit[dir] + 1.0 - game_time
-
-  if qty <= 0 then qty = 0 end
-
-  qty = qty ^ 0.5
-
-  love.graphics.setColor(255*qty, 255*qty, 255*(1-qty))
-  love.graphics.line(x1, y1, x2, y2)
-end
 
 
 
 function love.draw()
-  -- draw outer edges (when hit)
-
-  draw_outer_edge(2, OUTER_X1, OUTER_Y2, OUTER_X2, OUTER_Y2)
-  draw_outer_edge(8, OUTER_X1, OUTER_Y1, OUTER_X2, OUTER_Y1)
-  draw_outer_edge(4, OUTER_X1, OUTER_Y1, OUTER_X1, OUTER_Y2)
-  draw_outer_edge(6, OUTER_X2, OUTER_Y1, OUTER_X2, OUTER_Y2)
-
-  -- draw the inner box
-
-  draw_inner_edge(2, INNER_X1, INNER_Y2, INNER_X2, INNER_Y2)
-  draw_inner_edge(8, INNER_X1, INNER_Y1, INNER_X2, INNER_Y1)
-  draw_inner_edge(4, INNER_X1, INNER_Y1, INNER_X1, INNER_Y2)
-  draw_inner_edge(6, INNER_X2, INNER_Y1, INNER_X2, INNER_Y2)
-
-  -- entities (player, enemies, missiles, etc)
-
+  draw_map_edges()
   draw_all_entities()
-
-  -- user interface
-
   draw_ui()
 end
 
