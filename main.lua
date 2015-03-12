@@ -52,6 +52,48 @@ inners_hit = {}
 
 
 --
+-- enemy objects
+--
+-- Fields:
+--    x, y, angle, r, info
+--
+
+all_enemies = {}
+
+
+ENEMY_INFO =
+{
+  drone =
+  {
+    -- props --
+
+    hits = 1,
+
+    speed = 80,
+    turn_speed = 360,
+
+    -- shape --
+
+    r = 15,
+
+    color = { 64,192,128 },
+
+    lines =
+    {
+      { -180, 0.00 },
+      { -140, 1.00 },
+      {  -70, 1.00 },
+      {  -20, 1.00 },
+      {   20, 1.00 },
+      {   70, 1.00 },
+      {  140, 1.00 },
+      {  180, 0.00 }
+    }
+  },
+}
+
+
+--
 -- player object(s)
 --
 -- Fields:
@@ -61,7 +103,7 @@ inners_hit = {}
 --    r (radius, for physics)
 --    info
 --
-player = {}
+all_players = {}
 
 
 PLAYER_INFO =
@@ -126,47 +168,6 @@ PLAYER_INFO =
   },
 }
 
-
---
--- enemy objects
---
--- Fields:
---    x, y, angle, r, info
---
-
-all_enemies = {}
-
-
-ENEMY_INFO =
-{
-  drone =
-  {
-    -- props --
-
-    hits = 1,
-
-    speed = 80,
-    turn_speed = 360,
-
-    -- shape --
-
-    r = 15,
-
-    color = { 64,192,128 },
-
-    lines =
-    {
-      { -180, 0.00 },
-      { -140, 1.00 },
-      {  -70, 1.00 },
-      {  -20, 1.00 },
-      {   20, 1.00 },
-      {   70, 1.00 },
-      {  140, 1.00 },
-      {  180, 0.00 }
-    }
-  },
-}
 
 
 --
@@ -253,7 +254,9 @@ function draw_all_entities()
     enemy_draw(all_enemies[i])
   end
 
-  player_draw(player)
+  for i = 1, #all_players do
+    player_draw(all_players[i])
+  end
 end
 
 
@@ -313,7 +316,9 @@ end
 ------ PHYSICS ---------------------
 
 
-function player_setup(p, info)
+function player_spawn(info)
+  local p = {}
+
   p.kind = "player"
   p.info = info
 
@@ -332,6 +337,10 @@ function player_setup(p, info)
 
   -- prevent firing immediately on game start (bit of a hack)
   p.is_firing = true
+
+  table.insert(all_players, p)
+
+  return p
 end
 
 
@@ -436,7 +445,8 @@ function game_setup()
 
   all_missiles = {}
 
-  player_setup(player, PLAYER_INFO.player1)
+  player_spawn(PLAYER_INFO.player1)
+  player_spawn(PLAYER_INFO.player2)
 
   enemy_setup()
 end
@@ -549,6 +559,13 @@ end
 
 
 function player_move(p, dt)
+  -- still alive?
+  if p.dead or p.dying then
+    return
+  end
+
+  player_input(p, dt)
+
   -- p can be a player or enemy ship
 
   local old_inside_x = (INNER_X1 - p.r <= p.x) and (p.x <= INNER_X2 + p.r)
@@ -776,9 +793,8 @@ end
 
 function run_physics(dt)
 
-  if player.health > 0 then
-    player_input(player, dt)
-    player_move(player, dt)
+  for i = 1, #all_players do
+    player_move(all_players[i], dt)
   end
 
   for i = 1, #all_enemies do
