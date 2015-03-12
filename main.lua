@@ -14,8 +14,21 @@ require "utils"
 SCREEN_W = 800
 SCREEN_H = 600
 
+BORDER = 8
+
 INNER_W  = 300
 INNER_H  = 200
+
+-- set during startup
+OUTER_X1 = 0
+OUTER_Y1 = 0
+OUTER_X2 = 0
+OUTER_Y2 = 0
+
+INNER_X1 = 0
+INNER_Y1 = 0
+INNER_X2 = 0
+INNER_Y2 = 0
 
 
 -- indexed by DIR (2, 4, 6 or 8)
@@ -233,10 +246,16 @@ function missile_create(owner, x, y, angle, speed, color, target_length)
   m.x = x
   m.y = y
 
+  m.color  = color
   m.length = 1
   m.target_length = target_length
 
+  local dx, dy = geom.ang_to_vec(angle, speed)
 
+  m.vel_x = dx
+  m.vel_y = dy
+
+  return m
 end
 
 
@@ -246,7 +265,7 @@ function enemy_reset()
 
   for ex = 1, 5 do
   for ey = 1, 4 do
-    local e = enemy_create(INNER_X + ex * 50, INNER_Y2 + ey * 35, 0, 12, SHAPES.drone)
+    local e = enemy_create(INNER_X1 + ex * 50, INNER_Y2 + ey * 35, 0, 12, SHAPES.drone)
 
   end
   end
@@ -270,6 +289,13 @@ function game_reset()
   enemy_reset()
 end
 
+
+
+function player_fire(p)
+  local dx, dy = geom.ang_to_vec(p.angle)
+
+  -- FIXME
+end
 
 
 function player_input(p, dt)
@@ -299,16 +325,24 @@ function player_input(p, dt)
   local fire = love.keyboard.isDown(" ") or love.keyboard.isDown("lctrl") or
                love.keyboard.isDown("rctrl")
 
+  if p.is_firing ~= fire then
+    p.is_firing = fire
+
+    if fire then
+      player_fire(p)
+    end
+  end
+
   -- TODO : firing
 end
 
 
 
-function move_ship(p, dt)
+function move_player(p, dt)
   -- p can be a player or enemy ship
 
-  local old_inside_x = (INNER_X - p.r <= p.x) and (p.x <= INNER_X2 + p.r)
-  local old_inside_y = (INNER_Y - p.r <= p.y) and (p.y <= INNER_Y2 + p.r)
+  local old_inside_x = (INNER_X1 - p.r <= p.x) and (p.x <= INNER_X2 + p.r)
+  local old_inside_y = (INNER_Y1 - p.r <= p.y) and (p.y <= INNER_Y2 + p.r)
 
   p.x = p.x + p.vel_x * dt
   p.y = p.y + p.vel_y * dt
@@ -317,6 +351,8 @@ function move_ship(p, dt)
   local epsilon = 0.001
 
   -- bounce off edges
+
+  -- FIXME : user OUTER_xxxx !!!
 
   if p.x < p.r then
     p.x = p.r + epsilon
@@ -342,8 +378,8 @@ function move_ship(p, dt)
 
   -- bounce off inner box
 
-  local inside_x = (INNER_X - p.r <= p.x) and (p.x <= INNER_X2 + p.r)
-  local inside_y = (INNER_Y - p.r <= p.y) and (p.y <= INNER_Y2 + p.r)
+  local inside_x = (INNER_X1 - p.r <= p.x) and (p.x <= INNER_X2 + p.r)
+  local inside_y = (INNER_Y1 - p.r <= p.y) and (p.y <= INNER_Y2 + p.r)
 
   if inside_x and inside_y then
     -- figure out if we hit the top/bottom ("y") or the left/right sides ("x")
@@ -367,7 +403,7 @@ function move_ship(p, dt)
         p.vel_x = math.max(-0.1, p.vel_x)
         inners_hit[6] = game_time
       else
-        p.x = INNER_X - p.r - epsilon
+        p.x = INNER_X1 - p.r - epsilon
         p.vel_x = - p.vel_x * BOUNCE_FRICTION
         p.vel_x = math.min(0.1, p.vel_x)
         inners_hit[4] = game_time
@@ -381,7 +417,7 @@ function move_ship(p, dt)
         p.vel_y = math.max(-0.1, p.vel_y)
         inners_hit[2] = game_time
       else
-        p.y = INNER_Y - p.r + epsilon
+        p.y = INNER_Y1 - p.r + epsilon
         p.vel_y = - p.vel_y * BOUNCE_FRICTION
         p.vel_y = math.min(0.1, p.vel_y)
         inners_hit[8] = game_time
@@ -390,7 +426,44 @@ function move_ship(p, dt)
     end
 
   end
+end
 
+
+
+function move_enemy(e, dt)
+  -- TODO
+end
+
+
+
+function move_missile(m, dt)
+  local old_x = m.x
+  local old_y = m.y
+
+  local new_x = m.x + m.vel_x * dt
+  local new_y = m.y + m.vel_y * dt
+
+  local old_inner_x = (INNER_X1 <= old_x and old_x <= INNER_X2)
+  local old_inner_y = (INNER_Y1 <= old_y and old_y <= INNER_Y2)
+
+  local inner_x = (INNER_X1 <= new_x and new_x <= INNER_X2)
+  local inner_y = (INNER_Y1 <= new_y and new_y <= INNER_Y2)
+
+
+  m.x = new_x
+  m.y = new_y
+
+  -- collide with edge of map
+
+  -- FIXME
+
+
+  -- grow length
+  local vel_len = geom.vec_len(m.x - old_x, m.y - old_y)
+
+  if m.length < m.total_length then
+    m.length = math.min(m.length + vel_len, m.total_length)
+  end
 end
 
 
@@ -399,9 +472,18 @@ function run_physics(dt)
 
   if player.health > 0 then
     player_input(player, dt)
-    move_ship(player, dt)
+    move_player(player, dt)
   end
 
+  for i = 1, #all_enemies do
+    move_enemy(all_enemies[i], dt)
+  end
+
+  -- missiles will hit stuff now
+
+  for i = 1, #all_missiles do
+    move_missile(all_missiles[i], dt)
+  end
 end
 
 
@@ -439,11 +521,15 @@ function love.load()
   love.window.setMode(800, 600, {fullscreen=false})
   love.window.setTitle("Torrega Race")
 
-  INNER_X = (SCREEN_W - INNER_W) / 2
-  INNER_Y = (SCREEN_H - INNER_H) / 2
+  INNER_X1 = (SCREEN_W - INNER_W) / 2
+  INNER_Y1 = (SCREEN_H - INNER_H) / 2
+  INNER_X2 = INNER_X1 + INNER_W
+  INNER_Y2 = INNER_Y1 + INNER_H
 
-  INNER_X2 = INNER_X + INNER_W
-  INNER_Y2 = INNER_Y + INNER_H
+  OUTER_X1 = BORDER
+  OUTER_Y1 = BORDER
+  OUTER_X2 = SCREEN_W - BORDER
+  OUTER_Y2 = SCREEN_H - BORDER
 
   game_reset()
 end
@@ -468,7 +554,7 @@ end
 
 
 
-local function draw_edge(dir, x1, y1, x2, y2)
+local function draw_outer_edge(dir, x1, y1, x2, y2)
   local qty = edges_hit[dir] + 1.0 - game_time
 
   if qty <= 0 then return end
@@ -496,17 +582,17 @@ end
 function love.draw()
   -- draw outer edges (when hit)
 
-  draw_edge(2, 1, SCREEN_H-1, SCREEN_W-1, SCREEN_H-1)
-  draw_edge(8, 1, 1, SCREEN_W-1, 1)
-  draw_edge(4, 1, 1, 1, SCREEN_H-1)
-  draw_edge(6, SCREEN_W-1, 1, SCREEN_W-1, SCREEN_H-1)
+  draw_outer_edge(2, OUTER_X1, OUTER_Y2, OUTER_X2, OUTER_Y2)
+  draw_outer_edge(8, OUTER_X1, OUTER_Y1, OUTER_X2, OUTER_Y1)
+  draw_outer_edge(4, OUTER_X1, OUTER_Y1, OUTER_X1, OUTER_Y2)
+  draw_outer_edge(6, OUTER_X2, OUTER_Y1, OUTER_X2, OUTER_Y2)
 
   -- draw the inner box
 
-  draw_inner_edge(2, INNER_X,  INNER_Y2, INNER_X2, INNER_Y2)
-  draw_inner_edge(8, INNER_X,  INNER_Y,  INNER_X2, INNER_Y)
-  draw_inner_edge(4, INNER_X,  INNER_Y,  INNER_X,  INNER_Y2)
-  draw_inner_edge(6, INNER_X2, INNER_Y,  INNER_X2, INNER_Y2)
+  draw_inner_edge(2, INNER_X1, INNER_Y2, INNER_X2, INNER_Y2)
+  draw_inner_edge(8, INNER_X1, INNER_Y1, INNER_X2, INNER_Y1)
+  draw_inner_edge(4, INNER_X1, INNER_Y1, INNER_X1, INNER_Y2)
+  draw_inner_edge(6, INNER_X2, INNER_Y1, INNER_X2, INNER_Y2)
 
   -- entities (player, enemies, missiles, etc)
 

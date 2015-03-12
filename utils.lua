@@ -5,6 +5,7 @@
 
 geom = {}
 
+
 function geom.ang_to_vec(angle, len)
   len = len or 1
 
@@ -12,5 +13,10 @@ function geom.ang_to_vec(angle, len)
   local dy = -math.sin(angle * math.pi / 180.0)
 
   return dx * len , dy * len
+end
+
+
+function geom.vec_len(x, y)
+  return math.sqrt(x * x + y * y)
 end
 
