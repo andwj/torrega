@@ -73,7 +73,7 @@ PLAYER_INFO =
     spawn_x = 100,
     spawn_y = 100,
 
-    turn_speed = 240,
+    turn_speed = 270,
 
     thrust_velocity = 500,
     bounce_friction = 0.88,
@@ -103,7 +103,7 @@ PLAYER_INFO =
     spawn_x = 80,
     spawn_y = 140,
 
-    turn_speed = 240,
+    turn_speed = 270,
 
     thrust_velocity = 500,
     bounce_friction = 0.88,
@@ -145,7 +145,7 @@ ENEMY_INFO =
 
     hits = 1,
 
-    speed = 100,
+    speed = 80,
     turn_speed = 360,
 
     -- shape --
@@ -397,7 +397,6 @@ function enemy_create_drone_path(ey)
     { x=x2, y=y3 },
     { x=x4, y=y3 },
     { x=x4, y=y1 },
-    { x=x5, y=y1 }
   }
 end
 
@@ -406,8 +405,8 @@ end
 function enemy_setup()
   all_enemies  = {}
 
-  for ey = 1, 4 do
-    for ex = 1, 5 do
+  for ey = 1, 5 do
+    for ex = 1, 6 do
       local x = INNER_X1 + ex * 50
 
       local path = enemy_create_drone_path(ey)
@@ -415,7 +414,7 @@ function enemy_setup()
 
       local e = enemy_spawn(x, y, 0, 12, ENEMY_INFO.drone)
 
-      e.speed = e.info.speed ---  * (1.0 + (ey - 1) / 4)
+      e.speed = e.info.speed * (1.0 + (ex - 1) / 6)
 
       e.path = path
     end
@@ -687,7 +686,10 @@ function enemy_move(e, dt)
       e.x = e.path[1].x
       e.y = e.path[1].y
 
-      table.remove(e.path, 1)
+      local PREV = table.remove(e.path, 1)
+
+      -- move to end of list, to cycle indefinitely
+      table.insert(e.path, PREV)
 
       if e.path[1] == nil then
         -- reached end of path
