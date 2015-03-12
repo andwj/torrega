@@ -8,6 +8,9 @@
 --
 
 
+require "utils"
+
+
 SCREEN_W = 800
 SCREEN_H = 600
 
@@ -16,8 +19,8 @@ INNER_H  = 200
 
 
 -- indexed by DIR (2, 4, 6 or 8)
-edges_hit  = { }
-inners_hit = { }
+edges_hit  = {}
+inners_hit = {}
 
 
 player =
@@ -27,6 +30,7 @@ player =
   --    x, y, vel_x, vel_y
   --    angle (in degrees)
   --    r (radius, for physics)
+  --    shape
 }
 
 TURN_SPEED = 240
@@ -90,8 +94,22 @@ SHAPES =
 -- enemy class
 --
 -- Fields:
+--    x, y, angle, r, shape
+--
 
 all_enemies = {}
+
+
+-- missile class
+--
+-- Fields:
+--    x, y, angle
+--    vel_x, vel_y
+--    length, color
+--    owner : player or enemy
+--
+
+all_missiles = {}
 
 
 
@@ -110,8 +128,10 @@ function draw_shape(sh, base_x, base_y, base_angle)
     local ang = base_angle + point[1]
     local r   = sh.r       * point[2]
 
-    local x = base_x + math.cos(ang * math.pi / 180.0) * r
-    local y = base_y - math.sin(ang * math.pi / 180.0) * r
+    local dx, dy = geom.ang_to_vec(ang, r)
+
+    local x = base_x + dx
+    local y = base_y + dy
 
     if last_x then
       love.graphics.line(last_x, last_y, x, y)
@@ -136,7 +156,24 @@ end
 
 
 
+function missile_draw(m)
+  love.graphics.setColor(m.color[1], m.color[2], m.color[3])
+
+  local dx, dy = geom.ang_to_vec(m.angle, m.length)
+
+  local x2 = m.x + dx
+  local y2 = m.y + dy
+
+  love.graphics.line(x2, y2, m.x, m.y)
+end
+
+
+
 function draw_all_entities()
+  for i = 1, #all_missiles do
+    missile_draw(all_missiles[i])
+  end
+
   for i = 1, #all_enemies do
     enemy_draw(all_enemies[i])
   end
@@ -150,7 +187,10 @@ end
 
 
 function player_reset(p)
+  p.kind = "player"
+
   p.health = 100
+  p.score  = 0
 
   p.x = 50
   p.y = 100
@@ -170,6 +210,8 @@ end
 function enemy_create(x, y, angle, r, shape)
   local e = {}
 
+  e.kind = "enemy"
+
   e.x = x
   e.y = y
   e.angle = angle
@@ -182,9 +224,25 @@ function enemy_create(x, y, angle, r, shape)
 end
 
 
+function missile_create(owner, x, y, angle, speed, color, target_length)
+  local m = {}
+
+  m.kind  = "missile"
+  m.owner = owner
+
+  m.x = x
+  m.y = y
+
+  m.length = 1
+  m.target_length = target_length
+
+
+end
+
+
 
 function enemy_reset()
-  all_enemies = {}
+  all_enemies  = {}
 
   for ex = 1, 5 do
   for ey = 1, 4 do
@@ -204,6 +262,8 @@ function game_reset()
     edges_hit[dir]  = -2
     inners_hit[dir] = -2
   end
+
+  all_missiles = {}
 
   player_reset(player)
 
@@ -229,11 +289,10 @@ function player_input(p, dt)
   local thrust = love.keyboard.isDown("up") or love.keyboard.isDown("w")
 
   if thrust then
-    local dx =  math.cos(p.angle * math.pi / 180.0)
-    local dy = -math.sin(p.angle * math.pi / 180.0)
-    
-    p.vel_x = p.vel_x + THRUST_VELOCITY * dx * dt
-    p.vel_y = p.vel_y + THRUST_VELOCITY * dy * dt
+    local dx, dy = geom.ang_to_vec(p.angle, THRUST_VELOCITY * dt)
+
+    p.vel_x = p.vel_x + dx
+    p.vel_y = p.vel_y + dy
   end
 
 
@@ -263,7 +322,7 @@ function move_ship(p, dt)
     p.x = p.r + epsilon
     p.vel_x = - p.vel_x * BOUNCE_FRICTION
     edges_hit[4] = game_time
-  
+
   elseif p.x > SCREEN_W - p.r then
     p.x = SCREEN_W - p.r - epsilon
     p.vel_x = - p.vel_x * BOUNCE_FRICTION
@@ -274,7 +333,7 @@ function move_ship(p, dt)
     p.y = p.r + epsilon
     p.vel_y = - p.vel_y * BOUNCE_FRICTION
     edges_hit[8] = game_time
-  
+
   elseif p.y > SCREEN_H - p.r then
     p.y = SCREEN_H - p.r - epsilon
     p.vel_y = - p.vel_y * BOUNCE_FRICTION
