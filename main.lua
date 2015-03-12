@@ -815,31 +815,49 @@ end
 ------------------------------------------------------------------------
 
 
-function draw_ui()
-  if game_started then
-    love.graphics.setColor(0, 0, 255)
-  else
-    love.graphics.setColor(104, 160, 255)
-  end
-
+function draw_title_screen()
+  love.graphics.setColor(104, 160, 255)
   love.graphics.setFont(fonts.title)
   love.graphics.printf("Torrega Race", 250, 250, 300, "center")
 
-  if game_started then
+  love.graphics.setColor(0, 0, 255)
+  love.graphics.setFont(fonts.credit)
+  love.graphics.printf("by Andrew Apted", 250, 310, 300, "center")
 
-  else
-    love.graphics.setColor(0, 0, 255)
-    love.graphics.setFont(fonts.credit)
-    love.graphics.printf("by Andrew Apted", 250, 310, 300, "center")
+  love.graphics.setFont(fonts.normal)
+  love.graphics.setColor(216, 216, 216)
+  love.graphics.printf("press SPACE to start", 300, 450, 300, "left")
 
-    love.graphics.setFont(fonts.normal)
-    love.graphics.setColor(216, 216, 216)
-    love.graphics.printf("press SPACE to start", 300, 450, 300, "left")
+  love.graphics.setColor(176, 176, 176)
+  love.graphics.printf("press ESC to quit",    300, 490, 300, "left")
+  love.graphics.printf("press O for options",  300, 530, 300, "left")
+end
 
-    love.graphics.setColor(176, 176, 176)
-    love.graphics.printf("press ESC to quit",    300, 490, 300, "left")
-    love.graphics.printf("press O for options",  300, 530, 300, "left")
+
+
+function draw_ui()
+  if not game_started then
+    draw_title_screen()
+    return
   end
+
+
+  love.graphics.setColor(52, 80, 255)
+  love.graphics.setFont(fonts.title)
+  love.graphics.printf("Round 1", 250, 250, 300, "center")
+
+  local sx = SCREEN_W / 2
+
+  love.graphics.setFont(fonts.normal)
+  love.graphics.setColor(0, 0, 255)
+  love.graphics.printf("Score:", sx - 110, 300, 100, "right")
+
+  love.graphics.setColor(216, 216, 216)
+  love.graphics.printf("000000", sx, 300, 100, "left")
+
+  love.graphics.setFont(fonts.normal)
+  love.graphics.setColor(0, 0, 255)
+  love.graphics.printf("Lives:", sx - 110, 370, 100, "right")
 end
 
 
