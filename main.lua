@@ -476,8 +476,8 @@ function game_setup()
   all_missiles = {}
 
   player_spawn(PLAYER_INFO.player1)
-  player_spawn(PLAYER_INFO.player2)
-  player_spawn(PLAYER_INFO.player3)
+--  player_spawn(PLAYER_INFO.player2)
+--  player_spawn(PLAYER_INFO.player3)
 
   enemy_setup()
 end
@@ -896,14 +896,20 @@ function draw_ui()
   end
 
 
+  local sx = SCREEN_W / 2
+  local sy = 230
+
+  if all_players[3] then sy = sy - 15 end
+
   love.graphics.setColor(52, 80, 255)
   love.graphics.setFont(fonts.title)
-  love.graphics.printf("Round 1", 250, 230, 300, "center")
+  love.graphics.printf("Round 1", sx - 150, sy, 300, "center")
 
-  local sx = SCREEN_W / 2
-  local sy = 310
+  sy = 310
 
-  if all_players[2] then
+  if all_players[3] then
+    sy = sy - 35
+  elseif all_players[2] then
     sy = sy - 20
   end
 
@@ -921,11 +927,22 @@ function draw_ui()
     sy = sy + 30
   end
 
+  if all_players[3] then
+    love.graphics.setColor(192, 128, 128)
+    love.graphics.printf("000000", sx, sy + 30, 100, "left")
+
+    sy = sy + 30
+  end
+
+  sy = sy + 30
+
+  if not all_players[2] then sy = sy + 15 end
+
   love.graphics.setColor(0, 0, 255)
-  love.graphics.printf("Lives:", sx - 110, sy + 40, 100, "right")
+  love.graphics.printf("Lives:", sx - 110, sy, 100, "right")
 
   love.graphics.setColor(176, 176, 176)
-  love.graphics.printf(">  >  >", sx, sy + 40, 200, "left")
+  love.graphics.printf(">  >  >", sx, sy, 200, "left")
 end
 
 
