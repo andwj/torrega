@@ -30,24 +30,17 @@ end
 
 
 function gen_missile_hit_wall()
-  local length = 20000
+  local length = 11000
   local rate   = 22050
 
   local data = love.sound.newSoundData(length, rate, 16, 1)
 
-  local last = { 0,0,0,0,0,0,0,0 }
-
   for i = 0, length - 1 do
+    local along = i / length
 
     m = math.random()
 
-    table.remove(last, 1)
-    table.insert(last, m)
-
-    m = (last[4] + last[1] + last[2] + last[3]
-       + last[5] + last[6] + last[7] + last[8]) / 4
-
-    m = m * ((length - i) / length)
+    m = m * (1 - along ^ 0.5)
 
     data:setSample(i, m)
   end

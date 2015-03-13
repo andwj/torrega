@@ -1033,7 +1033,7 @@ function missile_move(m, dt)
     if what == "outer" then game.hit_outers[dir] = game.time end
     if what == "inner" then game.hit_inners[dir] = game.time end
 
-    begin_sound("explosion")
+    begin_sound("hit_wall")
 
     m.dying = true
     return
@@ -1234,7 +1234,7 @@ end
 
 function load_all_sounds()
   
-  local function make_sound(name, data, num_sources, props)
+  local function make_sound(name, data, num_sources, volume, pitch)
     sounds[name] =
     {
       cur_idx = 1,
@@ -1246,8 +1246,8 @@ function load_all_sounds()
     for i = 1, num_sources do
       local sfx = love.audio.newSource(data)
 
-      if props.volume then sfx:setVolume(props.volume) end
-      if props.pitch  then sfx:setPitch (props.pitch)  end
+      if volume then sfx:setVolume(volume) end
+      if pitch  then sfx:setPitch (pitch)  end
 
       sounds[name].sources[i] = sfx
     end
@@ -1259,13 +1259,17 @@ function load_all_sounds()
   local firing2_data = gen_firing_sound()
   local firing3_data = gen_firing_sound()
 
-  make_sound("firing1", firing1_data, 4, { volume=0.5, pitch=1.412 })
-  make_sound("firing2", firing2_data, 4, { volume=0.5, pitch=1.000 })
-  make_sound("firing3", firing3_data, 4, { volume=0.5, pitch=1.848 })
+  local hit_wall_data = gen_missile_hit_wall()
+
+  make_sound("firing1", firing1_data, 4, 0.5, 1.41)
+  make_sound("firing2", firing2_data, 4, 0.5, 1.00)
+  make_sound("firing3", firing3_data, 4, 0.5, 1.85)
+
+  make_sound("hit_wall", hit_wall_data, 5, 0.5, 0.75)
 
   local explosion_data = gen_explosion_sound()
 
-  make_sound("explosion", explosion_data, 2, { pitch=0.5 })
+  make_sound("explosion", explosion_data, 2, 1.0, 0.50)
 end
 
 
