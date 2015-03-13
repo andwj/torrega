@@ -224,22 +224,22 @@ all_missiles = {}
 ------ RENDERING ---------------------
 
 
-function draw_shape(sh, base_x, base_y, base_angle)
-  love.graphics.setColor(sh.color[1], sh.color[2], sh.color[3])
+function actor_draw(a, info)
+  love.graphics.setColor(info.color[1], info.color[2], info.color[3])
 
   local last_x
   local last_y
 
-  for i = 1, #sh.lines do
-    local point = sh.lines[i]
+  for i = 1, #info.lines do
+    local point = info.lines[i]
 
-    local ang = base_angle + point[1]
-    local r   = sh.r       * point[2]
+    local ang = a.angle + point[1]
+    local r   = info.r  * point[2]
 
     local dx, dy = geom.ang_to_vec(ang, r)
 
-    local x = base_x + dx
-    local y = base_y + dy
+    local x = a.x + dx
+    local y = a.y + dy
 
     if last_x then
       love.graphics.line(last_x, last_y, x, y)
@@ -253,13 +253,13 @@ end
 
 
 function player_draw(p)
-  draw_shape(p.info, p.x, p.y, p.angle)
+  actor_draw(p, p.info)
 end
 
 
 
 function enemy_draw(e)
-  draw_shape(e.info, e.x, e.y, e.angle)
+  actor_draw(e, e.info)
 end
 
 
@@ -348,6 +348,66 @@ end
 
 
 ------ PHYSICS ---------------------
+
+
+function actor_hit_line_raw(a, tx1,ty1, tx2,ty2)
+  local last_x
+  local last_y
+
+  for i = 1, #info.lines do
+    local point = info.lines[i]
+
+    local ang = a.angle + point[1]
+    local r   = info.r  * point[2]
+
+    local dx, dy = geom.ang_to_vec(ang, r)
+
+    local x = a.x + dx
+    local y = a.y + dy
+
+    if last_x then
+      if geom.lines_intersect(tx1,ty1,tx2,ty2, last_x,last_y, x,y) then
+        return true
+      end
+    end
+
+    last_x = x
+    last_y = y
+  end
+
+  return false
+end
+
+
+
+function actor_hit_actor_raw(a1, a2)
+  local last_x
+  local last_y
+
+  for i = 1, #info.lines do
+    local point = info.lines[i]
+
+    local ang = a1.angle + point[1]
+    local r   = info.r   * point[2]
+
+    local dx, dy = geom.ang_to_vec(ang, r)
+
+    local x = a1.x + dx
+    local y = a1.y + dy
+
+    if last_x then
+      if actor_hit_line_raw(a2, last_x,last_y, x,y) then
+        return true
+      end
+    end
+
+    last_x = x
+    last_y = y
+  end
+
+  return false
+end
+
 
 
 function player_spawn(info)
@@ -488,7 +548,7 @@ end
 
 
 
-function missile_check_hit(x, y, old_x, old_y)
+function missile_check_hit_wall(x, y, old_x, old_y)
   -- returns:
   --    nil, nil     : hits nothing
   --    "outer", dir : hits outer edge of map
@@ -542,7 +602,7 @@ function fire_missile(p)
 
   -- don't spawn a missile if it is already off the map
 
-  local what, dir = missile_check_hit(x, y, p.x, p.y)
+  local what, dir = missile_check_hit_wall(x, y, p.x, p.y)
 
   if what then
     if what == "outer" then game.hit_outers[dir] = game.time end
@@ -824,7 +884,7 @@ function missile_move(m, dt)
 
   -- check for collision with edges of map
 
-  local what, dir = missile_check_hit(new_x, new_y, old_x, old_y)
+  local what, dir = missile_check_hit_wall(new_x, new_y, old_x, old_y)
 
   if what then
     -- FIXME : move missile onto wall
