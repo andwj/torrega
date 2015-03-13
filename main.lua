@@ -493,6 +493,22 @@ end
 
 
 
+function prune_dead_stuff(list)
+  -- prune completely dead objects from the list
+  -- can be used for enemies or missiles (but NOT players)
+
+  -- must step backwards through the list
+  for i = #list, 1, -1 do
+    local a = list[i]
+
+    if a.dead == "remove" then
+      table.remove(list, i)
+    end
+  end
+end
+
+
+
 function player_set_score(p, score)
   p.score = score
 
@@ -1170,6 +1186,12 @@ function run_physics(dt)
   for i = 1, #all_missiles do
     missile_move(all_missiles[i], dt)
   end
+
+  -- remove completely dead missiles and enemies
+  prune_dead_stuff(all_enemies)
+  prune_dead_stuff(all_missiles)
+
+all_players[1].score_str = "__" .. #all_missiles .. "__"
 end
 
 
