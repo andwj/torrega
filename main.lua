@@ -456,6 +456,14 @@ end
 
 
 
+function player_set_score(p, score)
+  p.score = score
+
+  p.score_str = string.format("%06d", score)
+end
+
+
+
 function player_spawn(info)
   local p = {}
 
@@ -463,7 +471,6 @@ function player_spawn(info)
   p.info = info
 
   p.health = 100
-  p.score  = 0
 
   p.x = info.spawn_x
   p.y = info.spawn_y
@@ -477,6 +484,8 @@ function player_spawn(info)
 
   -- prevent firing immediately on game start (bit of a hack)
   p.is_firing = true
+
+  player_set_score(p, 0)
 
   table.insert(all_players, p)
 
@@ -1080,18 +1089,18 @@ function draw_ui()
   love.graphics.printf("Score:", sx - 110, sy, 100, "right")
 
   love.graphics.setColor(176, 176, 176)
-  love.graphics.printf("000000", sx, sy, 100, "left")
+  love.graphics.printf(all_players[1].score_str, sx, sy, 100, "left")
 
   if all_players[2] then
     love.graphics.setColor(96, 192, 192)
-    love.graphics.printf("000000", sx, sy + 30, 100, "left")
+    love.graphics.printf(all_players[1].score_str, sx, sy + 30, 100, "left")
 
     sy = sy + 30
   end
 
   if all_players[3] then
     love.graphics.setColor(192, 128, 128)
-    love.graphics.printf("000000", sx, sy + 30, 100, "left")
+    love.graphics.printf(all_players[1].score_str, sx, sy + 30, 100, "left")
 
     sy = sy + 30
   end
