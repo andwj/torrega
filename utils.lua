@@ -75,3 +75,51 @@ function geom.calc_angle(dx, dy)
   return angle
 end
 
+
+function geom.perp_dist(x, y, sx,sy, ex,ey)
+  x = x - sx ; ex = ex - sx
+  y = y - sy ; ey = ey - sy
+
+  local len = math.sqrt(ex*ex + ey*ey)
+
+  if len < 0.001 then
+    error("perp_dist: zero-length line")
+  end
+
+  return (x * ey - y * ex) / len
+end
+
+
+function geom.along_dist(x, y, sx,sy, ex,ey)
+  x = x - sx ; ex = ex - sx
+  y = y - sy ; ey = ey - sy
+
+  local len = math.sqrt(ex*ex + ey*ey)
+
+  if len < 0.001 then
+    error("perp_dist: zero-length line")
+  end
+
+  return (x * ex + y * ey) / len
+end
+
+
+function geom.lines_intersect(ax1,ay1,ax2,ay2, bx1,by1,bx2,by2)
+  local a1 = geom.perp_dist(ax1, ay1, bx1,by1,bx2,by2)
+  local a2 = geom.perp_dist(ax2, ay2, bx1,by1,bx2,by2)
+
+  -- half-width of lines
+  local hw = 0.5
+
+  if a1 >  hw and a2 >  hw then return false end
+  if a1 < -hw and a2 < -hw then return false end
+
+  local b1 = geom.perp_dist(bx1, by1, ax1,ay1,ax2,ay2)
+  local b2 = geom.perp_dist(bx2, by2, ax1,ay1,ax2,ay2)
+
+  if b1 >  hw and b2 >  hw then return false end
+  if b1 < -hw and b2 < -hw then return false end
+
+  return true
+end
+
