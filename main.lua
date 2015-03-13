@@ -113,8 +113,8 @@ PLAYER_INFO =
   {
     -- props --
 
-    spawn_x = 100,
-    spawn_y = 100,
+    spawn_x = 400,
+    spawn_y = 104,
 
     turn_speed = 270,
 
@@ -143,7 +143,7 @@ PLAYER_INFO =
   {
     -- props --
 
-    spawn_x = 80,
+    spawn_x = 400,
     spawn_y = 140,
 
     turn_speed = 270,
@@ -159,6 +159,35 @@ PLAYER_INFO =
     r = 15,
 
     color = { 128,255,255 },
+
+    lines =
+    {
+      { -140, 1.00 },
+      {    0, 1.00 },
+      {  140, 1.00 }
+    }
+  },
+
+  player3 =
+  {
+    -- props --
+
+    spawn_x = 400,
+    spawn_y =  68,
+
+    turn_speed = 270,
+
+    thrust_velocity = 500,
+    bounce_friction = 0.88,
+
+    missile_speed = 500,
+    missile_len = 20,
+
+    -- shape --
+
+    r = 15,
+
+    color = { 255,160,160 },
 
     lines =
     {
@@ -448,6 +477,7 @@ function game_setup()
 
   player_spawn(PLAYER_INFO.player1)
   player_spawn(PLAYER_INFO.player2)
+  player_spawn(PLAYER_INFO.player3)
 
   enemy_setup()
 end
