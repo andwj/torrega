@@ -41,6 +41,12 @@ fonts =
 }
 
 
+sounds =
+{
+  -- firing
+}
+
+
 --
 -- the game state
 --
@@ -723,6 +729,7 @@ function player_input(p, dt)
 
     if fire then
       fire_missile(p)
+      love.audio.play(sounds.firing)
     end
   end
 end
@@ -1137,6 +1144,10 @@ function love.load()
 
   love.window.setMode(800, 600, {fullscreen=false})
   love.window.setTitle("Torrega Race")
+
+  love.audio.setVolume(0.3)
+
+  sounds.firing = gen_firing_sound()
 
   INNER_X1 = (SCREEN_W - INNER_W) / 2
   INNER_Y1 = (SCREEN_H - INNER_H) / 2
