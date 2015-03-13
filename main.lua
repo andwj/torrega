@@ -227,6 +227,10 @@ all_missiles = {}
 function actor_draw(a, info)
   love.graphics.setColor(info.color[1], info.color[2], info.color[3])
 
+if a.colliding then
+love.graphics.setColor(255, 0, 0)
+end
+
   local last_x
   local last_y
 
@@ -354,11 +358,11 @@ function actor_hit_line_raw(a, tx1,ty1, tx2,ty2)
   local last_x
   local last_y
 
-  for i = 1, #info.lines do
-    local point = info.lines[i]
+  for k = 1, #a.info.lines do
+    local point = a.info.lines[k]
 
-    local ang = a.angle + point[1]
-    local r   = info.r  * point[2]
+    local ang = a.angle  + point[1]
+    local r   = a.info.r * point[2]
 
     local dx, dy = geom.ang_to_vec(ang, r)
 
@@ -384,11 +388,11 @@ function actor_hit_actor_raw(a1, a2)
   local last_x
   local last_y
 
-  for i = 1, #info.lines do
-    local point = info.lines[i]
+  for i = 1, #a1.info.lines do
+    local point = a1.info.lines[i]
 
-    local ang = a1.angle + point[1]
-    local r   = info.r   * point[2]
+    local ang = a1.angle  + point[1]
+    local r   = a1.info.r * point[2]
 
     local dx, dy = geom.ang_to_vec(ang, r)
 
@@ -940,10 +944,34 @@ function missile_move(m, dt)
   m.y = new_y
 
 
+  local dx, dy = geom.normalize(m.vel_x, m.vel_y)
+
+  local end_x = m.x - dx * m.length
+  local end_y = m.y - dy * m.length
+
+
   -- check for hitting a player or enemy ship
 
-  -- TODO
+  if m.owner.kind == "player" then
+    for i = 1, #all_enemies do
+      local e = all_enemies[i]
 
+      if missile_hit_actor(m, end_x,end_y, m.x,m.y, e) then
+        e.colliding = true
+      end
+    end
+  end
+
+
+  if m.owner.kind == "enemy" then
+    for i = 1, #all_players do
+      local p = all_players[i]
+
+      if missile_hit_actor(m, end_x,end_y, m.x,m.y, p) then
+        -- FIXME player_die(p)
+      end
+    end
+  end
 end
 
 
@@ -959,6 +987,13 @@ function run_physics(dt)
   end
 
   -- missiles will hit stuff now
+
+-- FIXME TEST CRUD
+for i = 1, #all_enemies do
+local e = all_enemies[i]
+e.colliding = false 
+end
+
 
   for i = 1, #all_missiles do
     missile_move(all_missiles[i], dt)
@@ -1084,6 +1119,8 @@ end
 
 
 function love.update(dt)
+dt = dt * 0.2
+
   if game.state == "none" then
     if love.keyboard.isDown(" ") then
       game_setup()
