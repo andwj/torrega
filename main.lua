@@ -46,16 +46,17 @@ fonts =
 --
 game =
 {
+  -- can be : "none", "active", "wait", "over"
   state = "none",
 
   time  = 0,
   delta = 0,
+
+  -- indexed by DIR (2, 4, 6 or 8)
+  hit_outers = {},
+  hit_inners = {},
+
 }
-
-
--- indexed by DIR (2, 4, 6 or 8)
-edges_hit  = {}
-inners_hit = {}
 
 
 --
@@ -299,7 +300,7 @@ end
 function draw_outer_edge(dir, x1, y1, x2, y2)
   local TIME = 0.5
 
-  local qty = edges_hit[dir] + TIME - game.time
+  local qty = game.hit_outers[dir] + TIME - game.time
 
   if qty <= 0 then return end
 
@@ -314,7 +315,7 @@ function draw_inner_edge(dir, x1, y1, x2, y2)
   local qty = 0
 
   if game.state ~= "none" then
-    qty = inners_hit[dir] + 1.0 - game.time
+    qty = game.hit_inners[dir] + 1.0 - game.time
 
     if qty <= 0 then qty = 0 end
   end
@@ -472,8 +473,8 @@ function game_setup()
   game.delta = 0
 
   for dir = 2,8,2 do
-    edges_hit[dir]  = -2
-    inners_hit[dir] = -2
+    game.hit_outers[dir] = -2
+    game.hit_inners[dir] = -2
   end
 
   all_missiles = {}
@@ -544,8 +545,8 @@ function fire_missile(p)
   local what, dir = missile_check_hit(x, y, p.x, p.y)
 
   if what then
-    if what == "outer" then  edges_hit[dir] = game.time end
-    if what == "inner" then inners_hit[dir] = game.time end
+    if what == "outer" then game.hit_outers[dir] = game.time end
+    if what == "inner" then game.hit_inners[dir] = game.time end
 
     return
   end
@@ -618,26 +619,26 @@ function player_move(p, dt)
   if p.x < OUTER_X1 + p.r then
     p.x = OUTER_X1 + p.r + epsilon
     p.vel_x = - p.vel_x * bounce_friction
-    edges_hit[4] = game.time
+    game.hit_outers[4] = game.time
     return
 
   elseif p.x > OUTER_X2 - p.r then
     p.x = OUTER_X2 - p.r - epsilon
     p.vel_x = - p.vel_x * bounce_friction
-    edges_hit[6] = game.time
+    game.hit_outers[6] = game.time
     return
   end
 
   if p.y < OUTER_Y1 + p.r then
     p.y = OUTER_Y1 + p.r + epsilon
     p.vel_y = - p.vel_y * bounce_friction
-    edges_hit[8] = game.time
+    game.hit_outers[8] = game.time
     return
 
   elseif p.y > OUTER_Y2 - p.r then
     p.y = OUTER_Y2 - p.r - epsilon
     p.vel_y = - p.vel_y * bounce_friction
-    edges_hit[2] = game.time
+    game.hit_outers[2] = game.time
     return
   end
 
@@ -666,12 +667,12 @@ function player_move(p, dt)
         p.x = INNER_X2 + p.r + epsilon
         p.vel_x = - p.vel_x * bounce_friction
         p.vel_x = math.max(-0.1, p.vel_x)
-        inners_hit[6] = game.time
+        game.hit_inners[6] = game.time
       else
         p.x = INNER_X1 - p.r - epsilon
         p.vel_x = - p.vel_x * bounce_friction
         p.vel_x = math.min(0.1, p.vel_x)
-        inners_hit[4] = game.time
+        game.hit_inners[4] = game.time
       end
 
     else -- way == "y"
@@ -680,12 +681,12 @@ function player_move(p, dt)
         p.y = INNER_Y2 + p.r + epsilon
         p.vel_y = - p.vel_y * bounce_friction
         p.vel_y = math.max(-0.1, p.vel_y)
-        inners_hit[2] = game.time
+        game.hit_inners[2] = game.time
       else
         p.y = INNER_Y1 - p.r + epsilon
         p.vel_y = - p.vel_y * bounce_friction
         p.vel_y = math.min(0.1, p.vel_y)
-        inners_hit[8] = game.time
+        game.hit_inners[8] = game.time
       end
 
     end
@@ -828,8 +829,8 @@ function missile_move(m, dt)
   if what then
     -- FIXME : move missile onto wall
 
-    if what == "outer" then  edges_hit[dir] = game.time end
-    if what == "inner" then inners_hit[dir] = game.time end
+    if what == "outer" then game.hit_outers[dir] = game.time end
+    if what == "inner" then game.hit_inners[dir] = game.time end
 
     m.dying = true
     return
