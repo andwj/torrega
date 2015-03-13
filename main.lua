@@ -410,6 +410,45 @@ end
 
 
 
+function missile_hit_actor(m, x1,y1, x2,y2, a)
+  -- player missiles cannot hurt players, enemy missiles cannot hurt enemies
+  if m.owner.kind == a.kind then return false end
+
+  -- do a fast bbox test to eliminate actors far away from the missile
+
+  if a.x + a.info.r + 2 < math.min(x1, x2) then return false end
+  if a.x - a.info.r - 2 > math.max(x1, x2) then return false end
+
+  if a.y + a.info.r + 2 < math.min(y1, y2) then return false end
+  if a.y - a.info.r - 2 > math.max(y1, y2) then return false end
+
+  -- ok, now do much slower line intersection test
+
+  return actor_hit_line_raw(a, x1,y1, x2,y2)
+end
+
+
+
+function actor_hit_actor(a1, a2)
+  assert(a1 ~= a2)
+
+  -- currently assumes 'a1' is a player, 'a2' is an enemy
+
+  -- do a fast bbox test first
+
+  if a1.x + a1.info.r + 2 < a2.x - a2.info.r then return false end
+  if a1.x - a1.info.r - 2 > a2.x + a2.info.r then return false end
+
+  if a1.y + a1.info.r + 2 < a2.y - a2.info.r then return false end
+  if a1.y - a1.info.r - 2 > a2.y + a2.info.r then return false end
+
+  -- now do the much much slower line-v-line intersection tests
+
+  return actor_hit_actor_raw(a1, a2)
+end
+
+
+
 function player_spawn(info)
   local p = {}
 
