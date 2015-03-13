@@ -56,6 +56,9 @@ game =
   hit_outers = {},
   hit_inners = {},
 
+  lives = 0,
+  lives_str = "",
+  lives_max = 5,
 }
 
 
@@ -569,6 +572,19 @@ end
 
 
 
+function game_set_lives(num)
+  game.lives = num
+
+  if num == 0 then game.lives_str = "" end
+  if num == 1 then game.lives_str = ">" end
+  if num == 2 then game.lives_str = "> >" end
+  if num == 3 then game.lives_str = "> > >" end
+  if num == 4 then game.lives_str = "> > > >" end
+  if num >= 5 then game.lives_str = "> > > > >" end
+end
+
+
+
 function game_setup()
   game.state = "active"
 
@@ -579,6 +595,14 @@ function game_setup()
     game.hit_outers[dir] = -2
     game.hit_inners[dir] = -2
   end
+
+  game_set_lives(2)
+end
+
+
+
+function new_game()
+  game_setup()
 
   all_missiles = {}
 
@@ -1080,7 +1104,7 @@ function draw_ui()
   love.graphics.printf("Lives:", sx - 110, sy, 100, "right")
 
   love.graphics.setColor(176, 176, 176)
-  love.graphics.printf(">  >  >", sx, sy, 200, "left")
+  love.graphics.printf(game.lives_str, sx, sy, 200, "left")
 end
 
 
@@ -1119,11 +1143,9 @@ end
 
 
 function love.update(dt)
-dt = dt * 0.2
-
   if game.state == "none" then
     if love.keyboard.isDown(" ") then
-      game_setup()
+      new_game()
     end
   else
     game.time = game.time + dt
