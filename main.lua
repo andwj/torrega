@@ -130,7 +130,6 @@ ENEMY_INFO =
 -- player object(s)
 --
 -- Fields:
---    health
 --    x, y, vel_x, vel_y
 --    angle (in degrees)
 --    r (radius, for physics)
@@ -446,6 +445,9 @@ end
 
 
 function missile_hit_actor(m, x1,y1, x2,y2, a)
+  -- actor already dead?
+  if a.dead then return end
+
   -- player missiles cannot hurt players, enemy missiles cannot hurt enemies
   if m.owner.kind == a.kind then return false end
 
@@ -497,8 +499,6 @@ function player_spawn(info)
 
   p.kind = "player"
   p.info = info
-
-  p.health = 100
 
   p.x = info.spawn_x
   p.y = info.spawn_y
@@ -810,10 +810,11 @@ end
 
 
 function player_move(p, dt)
-  -- still alive?
-  if p.dead or p.dying then
+  if p.dead then
+    -- FIXME: death animation
     return
   end
+
 
   player_input(p, dt)
 
@@ -911,9 +912,6 @@ function player_move(p, dt)
   end
 
 
-  -- FIXME : hitting an enemy ship
-
-
   -- players bouncing off each other
 
   for i = 1, #all_players do
@@ -939,8 +937,20 @@ end
 
 
 
+function player_check_hit_enemy(p)
+  if p.dead then return end
+
+
+end
+
+
+
 function enemy_move(e, dt)
-  if e.dead then return end
+  if e.dead then
+    -- FIXME : death animation
+    return
+  end
+
 
   -- turning?
   if e.target_angle then
@@ -1010,15 +1020,15 @@ end
 
 
 function missile_move(m, dt)
-  if m.dead then return end
+  if m.dead then
+    -- shrink length while dying
+    if m.dead == "animate" then
+      m.length = m.length - m.speed * dt
 
-  -- shrink length while dying
-  if m.dying then
-    m.length = m.length - m.speed * dt
-
-    if m.length <= 0 then
-      m.length = 0
-      m.dead = 1
+      if m.length <= 0 then
+        m.length = 0
+        m.dead = "remove"
+      end
     end
 
     return
@@ -1050,7 +1060,7 @@ function missile_move(m, dt)
 
     begin_sound("hit_wall")
 
-    m.dying = true
+    m.dead = "animate"
     return
   end
 
@@ -1072,7 +1082,9 @@ function missile_move(m, dt)
       local e = all_enemies[i]
 
       if missile_hit_actor(m, end_x,end_y, m.x,m.y, e) then
-        e.colliding = true
+
+        m.dead = "animate"
+        return
       end
     end
   end
@@ -1084,6 +1096,9 @@ function missile_move(m, dt)
 
       if missile_hit_actor(m, end_x,end_y, m.x,m.y, p) then
         -- FIXME player_die(p)
+
+        m.dead = "animate"
+        return
       end
     end
   end
@@ -1092,13 +1107,13 @@ end
 
 
 function run_physics(dt)
+  for i = 1, #all_enemies do
+    enemy_move(all_enemies[i], dt)
+  end
 
   for i = 1, #all_players do
     player_move(all_players[i], dt)
-  end
-
-  for i = 1, #all_enemies do
-    enemy_move(all_enemies[i], dt)
+    player_check_hit_enemy(all_players[i])
   end
 
   -- missiles will hit stuff now
