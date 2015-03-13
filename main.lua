@@ -9,6 +9,7 @@
 
 
 require "utils"
+require "sound_gen"
 
 
 SCREEN_W = 800
