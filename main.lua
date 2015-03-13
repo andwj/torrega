@@ -1033,7 +1033,7 @@ function missile_move(m, dt)
     if what == "outer" then game.hit_outers[dir] = game.time end
     if what == "inner" then game.hit_inners[dir] = game.time end
 
-    begin_sound("missile_wall")
+    begin_sound("explosion")
 
     m.dying = true
     return
@@ -1259,13 +1259,13 @@ function load_all_sounds()
   local firing2_data = gen_firing_sound()
   local firing3_data = gen_firing_sound()
 
-  make_sound("firing1", firing1_data, 4, { volume=0.3, pitch=1.412 })
-  make_sound("firing2", firing2_data, 4, { volume=0.3, pitch=1.000 })
-  make_sound("firing3", firing3_data, 4, { volume=0.3, pitch=1.848 })
+  make_sound("firing1", firing1_data, 4, { volume=0.5, pitch=1.412 })
+  make_sound("firing2", firing2_data, 4, { volume=0.5, pitch=1.000 })
+  make_sound("firing3", firing3_data, 4, { volume=0.5, pitch=1.848 })
 
   local explosion_data = gen_explosion_sound()
 
-  make_sound("explosion", explosion_data, 2, {})
+  make_sound("explosion", explosion_data, 2, { pitch=0.5 })
 end
 
 

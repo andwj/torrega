@@ -29,7 +29,7 @@ end
 
 
 
-function gen_explosion_sound()
+function gen_missile_hit_wall()
   local length = 20000
   local rate   = 22050
 
@@ -48,6 +48,39 @@ function gen_explosion_sound()
        + last[5] + last[6] + last[7] + last[8]) / 4
 
     m = m * ((length - i) / length)
+
+    data:setSample(i, m)
+  end
+
+  return data
+end
+
+
+
+function gen_explosion_sound()
+  local length = 30000
+  local rate   = 22050
+
+  local data = love.sound.newSoundData(length, rate, 16, 1)
+
+  local last = { 0,0,0,0,0,0,0,0 }
+
+  for i = 0, length - 1 do
+    m = math.random()
+
+    table.remove(last, 1)
+    table.insert(last, m)
+
+    m = (last[4] + last[1] + last[2] + last[3]
+       + last[5] + last[6] + last[7] + last[8]) / 4
+
+    local along = i / length
+    local factor = ((math.cos(along * math.pi) + 1) / 2) ^ 2
+
+    m = m * factor
+
+    if m < -1 then m = m + 2 end
+    if m >  1 then m = m - 2 end
 
     data:setSample(i, m)
   end
