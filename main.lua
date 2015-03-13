@@ -794,6 +794,21 @@ end
 
 
 
+function player_hit_wall(p, what, dir)
+  -- flash the wall hit
+  -- IDEA : make flash color match the player color
+
+  if what == "inner" then
+    game.hit_inners[dir] = game.time
+  else
+    game.hit_outers[dir] = game.time
+  end
+
+  begin_sound("hit_wall")
+end
+
+
+
 function player_move(p, dt)
   -- still alive?
   if p.dead or p.dying then
@@ -820,26 +835,26 @@ function player_move(p, dt)
   if p.x < OUTER_X1 + p.r then
     p.x = OUTER_X1 + p.r + epsilon
     p.vel_x = - p.vel_x * bounce_friction
-    game.hit_outers[4] = game.time
+    player_hit_wall(p, "outer", 4)
     return
 
   elseif p.x > OUTER_X2 - p.r then
     p.x = OUTER_X2 - p.r - epsilon
     p.vel_x = - p.vel_x * bounce_friction
-    game.hit_outers[6] = game.time
+    player_hit_wall(p, "outer", 6)
     return
   end
 
   if p.y < OUTER_Y1 + p.r then
     p.y = OUTER_Y1 + p.r + epsilon
     p.vel_y = - p.vel_y * bounce_friction
-    game.hit_outers[8] = game.time
+    player_hit_wall(p, "outer", 8)
     return
 
   elseif p.y > OUTER_Y2 - p.r then
     p.y = OUTER_Y2 - p.r - epsilon
     p.vel_y = - p.vel_y * bounce_friction
-    game.hit_outers[2] = game.time
+    player_hit_wall(p, "outer", 2)
     return
   end
 
@@ -868,12 +883,12 @@ function player_move(p, dt)
         p.x = INNER_X2 + p.r + epsilon
         p.vel_x = - p.vel_x * bounce_friction
         p.vel_x = math.max(-0.1, p.vel_x)
-        game.hit_inners[6] = game.time
+        player_hit_wall(p, "inner", 6)
       else
         p.x = INNER_X1 - p.r - epsilon
         p.vel_x = - p.vel_x * bounce_friction
         p.vel_x = math.min(0.1, p.vel_x)
-        game.hit_inners[4] = game.time
+        player_hit_wall(p, "inner", 4)
       end
 
     else -- way == "y"
@@ -882,12 +897,12 @@ function player_move(p, dt)
         p.y = INNER_Y2 + p.r + epsilon
         p.vel_y = - p.vel_y * bounce_friction
         p.vel_y = math.max(-0.1, p.vel_y)
-        game.hit_inners[2] = game.time
+        player_hit_wall(p, "inner", 2)
       else
         p.y = INNER_Y1 - p.r + epsilon
         p.vel_y = - p.vel_y * bounce_friction
         p.vel_y = math.min(0.1, p.vel_y)
-        game.hit_inners[8] = game.time
+        player_hit_wall(p, "inner", 8)
       end
 
     end
