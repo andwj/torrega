@@ -32,18 +32,24 @@ INNER_X2 = 0
 INNER_Y2 = 0
 
 
-game_time  = 0
-delta_time = 0
-
-game_started = false
-
-
 fonts =
 {
   -- title
   -- credit
   -- normal
   -- score
+}
+
+
+--
+-- the game state
+--
+game =
+{
+  state = "none",
+
+  time  = 0,
+  delta = 0,
 }
 
 
@@ -271,8 +277,7 @@ end
 
 
 function draw_all_entities()
-  if not game_started then
-    -- FIXME
+  if game.state == "none" then
     return
   end
 
@@ -294,7 +299,7 @@ end
 function draw_outer_edge(dir, x1, y1, x2, y2)
   local TIME = 0.5
 
-  local qty = edges_hit[dir] + TIME - game_time
+  local qty = edges_hit[dir] + TIME - game.time
 
   if qty <= 0 then return end
 
@@ -306,15 +311,13 @@ end
 
 
 function draw_inner_edge(dir, x1, y1, x2, y2)
-  local qty
+  local qty = 0
 
-  if game_started then
-    qty = inners_hit[dir] + 1.0 - game_time
-  else
-    qty = 0
+  if game.state ~= "none" then
+    qty = inners_hit[dir] + 1.0 - game.time
+
+    if qty <= 0 then qty = 0 end
   end
-
-  if qty <= 0 then qty = 0 end
 
   qty = qty ^ 0.5
 
@@ -326,7 +329,7 @@ end
 function draw_map_edges()
   -- draw outer edges (only when hit)
 
-  if game_started then
+  if game.state ~= "none" then
     draw_outer_edge(2, OUTER_X1, OUTER_Y2, OUTER_X2, OUTER_Y2)
     draw_outer_edge(8, OUTER_X1, OUTER_Y1, OUTER_X2, OUTER_Y1)
     draw_outer_edge(4, OUTER_X1, OUTER_Y1, OUTER_X1, OUTER_Y2)
@@ -463,10 +466,10 @@ end
 
 
 function game_setup()
-  game_started = true
+  game.state = "active"
 
-  game_time  = 0
-  delta_time = 0
+  game.time  = 0
+  game.delta = 0
 
   for dir = 2,8,2 do
     edges_hit[dir]  = -2
@@ -541,8 +544,8 @@ function fire_missile(p)
   local what, dir = missile_check_hit(x, y, p.x, p.y)
 
   if what then
-    if what == "outer" then  edges_hit[dir] = game_time end
-    if what == "inner" then inners_hit[dir] = game_time end
+    if what == "outer" then  edges_hit[dir] = game.time end
+    if what == "inner" then inners_hit[dir] = game.time end
 
     return
   end
@@ -615,26 +618,26 @@ function player_move(p, dt)
   if p.x < OUTER_X1 + p.r then
     p.x = OUTER_X1 + p.r + epsilon
     p.vel_x = - p.vel_x * bounce_friction
-    edges_hit[4] = game_time
+    edges_hit[4] = game.time
     return
 
   elseif p.x > OUTER_X2 - p.r then
     p.x = OUTER_X2 - p.r - epsilon
     p.vel_x = - p.vel_x * bounce_friction
-    edges_hit[6] = game_time
+    edges_hit[6] = game.time
     return
   end
 
   if p.y < OUTER_Y1 + p.r then
     p.y = OUTER_Y1 + p.r + epsilon
     p.vel_y = - p.vel_y * bounce_friction
-    edges_hit[8] = game_time
+    edges_hit[8] = game.time
     return
 
   elseif p.y > OUTER_Y2 - p.r then
     p.y = OUTER_Y2 - p.r - epsilon
     p.vel_y = - p.vel_y * bounce_friction
-    edges_hit[2] = game_time
+    edges_hit[2] = game.time
     return
   end
 
@@ -663,12 +666,12 @@ function player_move(p, dt)
         p.x = INNER_X2 + p.r + epsilon
         p.vel_x = - p.vel_x * bounce_friction
         p.vel_x = math.max(-0.1, p.vel_x)
-        inners_hit[6] = game_time
+        inners_hit[6] = game.time
       else
         p.x = INNER_X1 - p.r - epsilon
         p.vel_x = - p.vel_x * bounce_friction
         p.vel_x = math.min(0.1, p.vel_x)
-        inners_hit[4] = game_time
+        inners_hit[4] = game.time
       end
 
     else -- way == "y"
@@ -677,12 +680,12 @@ function player_move(p, dt)
         p.y = INNER_Y2 + p.r + epsilon
         p.vel_y = - p.vel_y * bounce_friction
         p.vel_y = math.max(-0.1, p.vel_y)
-        inners_hit[2] = game_time
+        inners_hit[2] = game.time
       else
         p.y = INNER_Y1 - p.r + epsilon
         p.vel_y = - p.vel_y * bounce_friction
         p.vel_y = math.min(0.1, p.vel_y)
-        inners_hit[8] = game_time
+        inners_hit[8] = game.time
       end
 
     end
@@ -825,8 +828,8 @@ function missile_move(m, dt)
   if what then
     -- FIXME : move missile onto wall
 
-    if what == "outer" then  edges_hit[dir] = game_time end
-    if what == "inner" then inners_hit[dir] = game_time end
+    if what == "outer" then  edges_hit[dir] = game.time end
+    if what == "inner" then inners_hit[dir] = game.time end
 
     m.dying = true
     return
@@ -890,7 +893,7 @@ end
 
 
 function draw_ui()
-  if not game_started then
+  if game.state == "none" then
     draw_title_screen()
     return
   end
@@ -981,20 +984,19 @@ end
 
 
 function love.update(dt)
-  if game_started then
-    game_time = game_time + dt
-
-    delta_time = delta_time + dt
-
-    while delta_time >= FRAME_TIME do
-      run_physics(FRAME_TIME)
-
-      delta_time = delta_time - FRAME_TIME
-    end
-
-  else
+  if game.state == "none" then
     if love.keyboard.isDown(" ") then
       game_setup()
+    end
+  else
+    game.time = game.time + dt
+
+    game.delta = game.delta + dt
+
+    while game.delta >= FRAME_TIME do
+      run_physics(FRAME_TIME)
+
+      game.delta = game.delta - FRAME_TIME
     end
   end
 
