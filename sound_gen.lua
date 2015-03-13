@@ -4,13 +4,16 @@
 
 
 function gen_firing_sound()
-  local length = 10000
+  local length = 40000
   local rate   = 22050
 
   local data = love.sound.newSoundData(length, rate, 16, 1)
 
   for i = 0, length - 1 do
-    local m = i % 50
+    local along = i / length
+
+    local m = (i * (1 + along))
+    local m = m % 50
 
     if m > 24 then m = 50 - m end
 
@@ -21,6 +24,6 @@ function gen_firing_sound()
     data:setSample(i, m)
   end
 
-  return love.audio.newSource(data)
+  return data
 end
 

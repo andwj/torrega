@@ -43,8 +43,11 @@ fonts =
 
 sounds =
 {
-  -- firing
+  -- firing[1..4]
 }
+
+
+FIRING_SOURCES = 4
 
 
 --
@@ -697,6 +700,22 @@ function fire_missile(p)
 end
 
 
+
+function player_fire_sound(p)
+---  local sfx = sounds.firing[1]
+  -- remove a source from front of list, place at back of list
+  local sfx = table.remove(sounds.firing, 1)
+  table.insert(sounds.firing, sfx)
+
+  if sfx:isPlaying() then
+    sfx:rewind()
+  else
+    sfx:play()
+  end
+end
+
+
+
 function player_input(p, dt)
 
   local turn_left  = love.keyboard.isDown("left")  or love.keyboard.isDown("a")
@@ -729,7 +748,8 @@ function player_input(p, dt)
 
     if fire then
       fire_missile(p)
-      love.audio.play(sounds.firing)
+
+      player_fire_sound(p)
     end
   end
 end
@@ -1147,7 +1167,22 @@ function love.load()
 
   love.audio.setVolume(0.3)
 
-  sounds.firing = gen_firing_sound()
+  local firing_data = gen_firing_sound()
+
+  sounds.firing =
+  {
+    love.audio.newSource(firing_data),
+    love.audio.newSource(firing_data),
+    love.audio.newSource(firing_data),
+    love.audio.newSource(firing_data),
+    love.audio.newSource(firing_data),
+    love.audio.newSource(firing_data),
+    love.audio.newSource(firing_data),
+    love.audio.newSource(firing_data),
+  }
+for i = 1,8 do
+  sounds.firing[i]:setPitch(1.0 / i)
+end
 
   INNER_X1 = (SCREEN_W - INNER_W) / 2
   INNER_Y1 = (SCREEN_H - INNER_H) / 2
