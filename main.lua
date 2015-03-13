@@ -156,6 +156,8 @@ PLAYER_INFO =
     missile_speed = 500,
     missile_len = 20,
 
+    firing_sound = "firing1",
+
     -- shape --
 
     r = 15,
@@ -186,6 +188,8 @@ PLAYER_INFO =
     missile_speed = 500,
     missile_len = 20,
 
+    firing_sound = "firing2",
+
     -- shape --
 
     r = 15,
@@ -214,6 +218,8 @@ PLAYER_INFO =
 
     missile_speed = 500,
     missile_len = 20,
+
+    firing_sound = "firing3",
 
     -- shape --
 
@@ -648,8 +654,8 @@ function new_game()
   all_missiles = {}
 
   player_spawn(PLAYER_INFO.player1)
---  player_spawn(PLAYER_INFO.player2)
---  player_spawn(PLAYER_INFO.player3)
+--player_spawn(PLAYER_INFO.player2)
+--player_spawn(PLAYER_INFO.player3)
 
   enemy_setup()
 end
@@ -724,7 +730,8 @@ end
 
 
 
-function begin_sound(info)
+function begin_sound(name)
+  local info = sounds[name]
   if not info then return end
 
   local sfx = info.sources[info.cur_idx]
@@ -780,7 +787,7 @@ function player_input(p, dt)
     if fire then
       fire_missile(p)
 
---      player_fire_sound(p)
+      begin_sound(p.info.firing_sound)
     end
   end
 end
@@ -1227,17 +1234,22 @@ end
 
 function load_all_sounds()
   
-  local function make_sound(name, data, num_sources)
+  local function make_sound(name, data, num_sources, props)
     sounds[name] =
     {
-      cur_idx = 1
-      max_idx = num_sources
+      cur_idx = 1,
+      max_idx = num_sources,
 
-      sources = {}
+      sources = {},
     }
 
     for i = 1, num_sources do
-      sounds[name].sources[i] = love.audio.newSource(data)
+      local sfx = love.audio.newSource(data)
+
+      if props.volume then sfx:setVolume(props.volume) end
+      if props.pitch  then sfx:setPitch (props.pitch)  end
+
+      sounds[name].sources[i] = sfx
     end
   end
 
@@ -1247,13 +1259,13 @@ function load_all_sounds()
   local firing2_data = gen_firing_sound()
   local firing3_data = gen_firing_sound()
 
-  make_sound("firing1", firing1_data, 4)
-  make_sound("firing2", firing2_data, 4)
-  make_sound("firing3", firing3_data, 4)
+  make_sound("firing1", firing1_data, 4, { volume=0.3, pitch=1.412 })
+  make_sound("firing2", firing2_data, 4, { volume=0.3, pitch=1.000 })
+  make_sound("firing3", firing3_data, 4, { volume=0.3, pitch=1.848 })
 
   local explosion_data = gen_explosion_sound()
 
-  make_sound("explosion", explosion_data, 2)
+  make_sound("explosion", explosion_data, 2, {})
 end
 
 
