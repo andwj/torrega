@@ -32,6 +32,10 @@ INNER_X2 = 0
 INNER_Y2 = 0
 
 
+-- physics are run at 100 fps
+FRAME_TIME = (1 / 100)
+
+
 fonts =
 {
   -- title
@@ -41,13 +45,19 @@ fonts =
 }
 
 
+--
+--  sound info
+--
+--  Fields: sources, use_sources
+--
 sounds =
 {
-  -- firing[1..4]
+  -- firing1
+  -- firing2
+  -- firing3
+
+  -- explosion
 }
-
-
-FIRING_SOURCES = 4
 
 
 --
@@ -68,6 +78,9 @@ game =
   lives = 0,
   lives_str = "",
   lives_max = 5,
+
+  round = 0,
+  round_str = "",
 }
 
 
@@ -603,6 +616,14 @@ end
 
 
 
+function game_set_round(round)
+  game.round = round
+
+  game.round_str = "Round " .. round
+end
+
+
+
 function game_setup()
   game.state = "active"
 
@@ -615,6 +636,8 @@ function game_setup()
   end
 
   game_set_lives(2)
+
+  game_set_round(2)
 end
 
 
@@ -701,12 +724,20 @@ end
 
 
 
-function player_fire_sound(p)
----  local sfx = sounds.firing[1]
-  -- remove a source from front of list, place at back of list
-  local sfx = table.remove(sounds.firing, 1)
-  table.insert(sounds.firing, sfx)
+function begin_sound(info)
+  if not info then return end
 
+  local sfx = info.sources[info.cur_idx]
+  assert(sfx)
+
+  -- bump index to use the next source
+  info.cur_idx = info.cur_idx + 1
+
+  if info.cur_idx > info.max_idx then
+    info.cur_idx = 1
+  end
+
+  -- if source is already playing, rewind it
   if sfx:isPlaying() then
     sfx:rewind()
   else
@@ -749,7 +780,7 @@ function player_input(p, dt)
     if fire then
       fire_missile(p)
 
-      player_fire_sound(p)
+--      player_fire_sound(p)
     end
   end
 end
@@ -995,6 +1026,8 @@ function missile_move(m, dt)
     if what == "outer" then game.hit_outers[dir] = game.time end
     if what == "inner" then game.hit_inners[dir] = game.time end
 
+    begin_sound("missile_wall")
+
     m.dying = true
     return
   end
@@ -1062,6 +1095,31 @@ end
 
 
 
+function love.update(dt)
+  if game.state == "none" then
+    if love.keyboard.isDown(" ") then
+      new_game()
+    end
+  else
+    game.time = game.time + dt
+
+    game.delta = game.delta + dt
+
+    while game.delta >= FRAME_TIME do
+      run_physics(FRAME_TIME)
+
+      game.delta = game.delta - FRAME_TIME
+    end
+  end
+
+  -- this can be used anywhere
+  if love.keyboard.isDown("escape") then
+    love.event.push("quit")
+  end
+end
+
+
+
 ------------------------------------------------------------------------
 --  UI STUFF (Menu, Score, etc)
 ------------------------------------------------------------------------
@@ -1101,7 +1159,7 @@ function draw_ui()
 
   love.graphics.setColor(52, 80, 255)
   love.graphics.setFont(fonts.title)
-  love.graphics.printf("Round 1", sx - 150, sy, 300, "center")
+  love.graphics.printf(game.round_str, sx - 150, sy, 300, "center")
 
   sy = 310
 
@@ -1145,44 +1203,73 @@ end
 
 
 
+function love.draw()
+  draw_map_edges()
+  draw_all_entities()
+  draw_ui()
+end
+
+
+
 ------------------------------------------------------------------------
---  CALLBACKS
+--  RESOURCE HANDLING
 ------------------------------------------------------------------------
 
 
-FRAME_TIME = (1 / 100)
+function load_all_fonts()
+  fonts.title  = love.graphics.setNewFont(36)
+  fonts.credit = love.graphics.setNewFont(24)
+  fonts.score  = love.graphics.setNewFont(30)
+  fonts.normal = love.graphics.setNewFont(20)
+end
+
+
+
+function load_all_sounds()
+  
+  local function make_sound(name, data, num_sources)
+    sounds[name] =
+    {
+      cur_idx = 1
+      max_idx = num_sources
+
+      sources = {}
+    }
+
+    for i = 1, num_sources do
+      sounds[name].sources[i] = love.audio.newSource(data)
+    end
+  end
+
+  --- load_all_sounds ---
+
+  local firing1_data = gen_firing_sound()
+  local firing2_data = gen_firing_sound()
+  local firing3_data = gen_firing_sound()
+
+  make_sound("firing1", firing1_data, 4)
+  make_sound("firing2", firing2_data, 4)
+  make_sound("firing3", firing3_data, 4)
+
+  local explosion_data = gen_explosion_sound()
+
+  make_sound("explosion", explosion_data, 2)
+end
+
 
 
 function love.load()
   love.graphics.setColor(255,255,255)
   love.graphics.setBackgroundColor(0,0,0)
 
-  fonts.title  = love.graphics.setNewFont(36)
-  fonts.credit = love.graphics.setNewFont(24)
-  fonts.score  = love.graphics.setNewFont(30)
-  fonts.normal = love.graphics.setNewFont(20)
+  load_all_fonts()
 
   love.window.setMode(800, 600, {fullscreen=false})
   love.window.setTitle("Torrega Race")
 
-  love.audio.setVolume(0.3)
+  love.audio.setVolume(0.5)
 
-  local firing_data = gen_firing_sound()
-
-  sounds.firing =
-  {
-    love.audio.newSource(firing_data),
-    love.audio.newSource(firing_data),
-    love.audio.newSource(firing_data),
-    love.audio.newSource(firing_data),
-    love.audio.newSource(firing_data),
-    love.audio.newSource(firing_data),
-    love.audio.newSource(firing_data),
-    love.audio.newSource(firing_data),
-  }
-for i = 1,8 do
-  sounds.firing[i]:setPitch(1.0 / i)
-end
+  load_all_sounds()
 
   INNER_X1 = (SCREEN_W - INNER_W) / 2
   INNER_Y1 = (SCREEN_H - INNER_H) / 2
@@ -1195,36 +1282,4 @@ end
   OUTER_Y2 = SCREEN_H - BORDER
 end
 
-
-
-function love.update(dt)
-  if game.state == "none" then
-    if love.keyboard.isDown(" ") then
-      new_game()
-    end
-  else
-    game.time = game.time + dt
-
-    game.delta = game.delta + dt
-
-    while game.delta >= FRAME_TIME do
-      run_physics(FRAME_TIME)
-
-      game.delta = game.delta - FRAME_TIME
-    end
-  end
-
-  -- this can be used anywhere
-  if love.keyboard.isDown("escape") then
-    love.event.push("quit")
-  end
-end
-
-
-
-function love.draw()
-  draw_map_edges()
-  draw_all_entities()
-  draw_ui()
-end
 
