@@ -88,7 +88,8 @@ game =
 -- enemy objects
 --
 -- Fields:
---    x, y, angle, r, info
+--    kind ("enemy"), info
+--    x, y, angle, r
 --
 
 all_enemies = {}
@@ -104,6 +105,8 @@ ENEMY_INFO =
 
     speed = 80,
     turn_speed = 360,
+
+    die_sound = "drone_die",
 
     -- shape --
 
@@ -130,10 +133,11 @@ ENEMY_INFO =
 -- player object(s)
 --
 -- Fields:
+--    kind ("player"), info
 --    x, y, vel_x, vel_y
 --    angle (in degrees)
 --    r (radius, for physics)
---    info
+--    enter_score
 --
 all_players = {}
 
@@ -471,6 +475,9 @@ function actor_hit_actor(a1, a2)
 
   -- currently assumes 'a1' is a player, 'a2' is an enemy
 
+  -- actor already dead?
+  if a2.dead then return end
+
   -- do a fast bbox test first
 
   if a1.x + a1.info.r + 2 < a2.x - a2.info.r then return false end
@@ -494,26 +501,34 @@ end
 
 
 
+function player_reset(p)
+  p.x = p.info.spawn_x
+  p.y = p.info.spawn_y
+
+  p.angle = p.info.spawn_angle or 0
+
+  p.vel_x = 0
+  p.vel_y = 0
+
+  -- prevent firing immediately on level start (bit of a hack)
+  p.is_firing = true
+
+  p.enter_score = 0
+
+  player_set_score(p, p.enter_score)
+end
+
+
+
 function player_spawn(info)
   local p = {}
 
   p.kind = "player"
   p.info = info
 
-  p.x = info.spawn_x
-  p.y = info.spawn_y
-
-  p.vel_x = 0
-  p.vel_y = 0
-
-  p.angle = 0
-
   p.r = 10  -- used for physics
 
-  -- prevent firing immediately on game start (bit of a hack)
-  p.is_firing = true
-
-  player_set_score(p, 0)
+  player_reset(p)
 
   table.insert(all_players, p)
 
@@ -566,8 +581,8 @@ end
 
 
 
-function enemy_create_drone_path(ey)
-  -- creates a set of target points which drones follow
+function enemy_make_drone_path(ey)
+  -- makes a set of target points which drones follow
 
   local y1 = INNER_Y2 + ey * 35
   local y3 = INNER_Y1 - ey * 35
@@ -595,7 +610,7 @@ function enemy_setup()
     for ex = 1, 6 do
       local x = INNER_X1 + ex * 50
 
-      local path = enemy_create_drone_path(ey)
+      local path = enemy_make_drone_path(ey)
       local y = path[1].y
 
       local e = enemy_spawn(x, y, 0, 12, ENEMY_INFO.drone)
@@ -937,10 +952,45 @@ end
 
 
 
+function player_die(p)
+  p.dead = "animate"
+
+  begin_sound("explosion")
+end
+
+
+
 function player_check_hit_enemy(p)
   if p.dead then return end
 
+  for i = 1,#all_enemies do
+    local e = all_enemies[i]
 
+    if actor_hit_actor(p, e) then
+      player_die(p)
+      return
+    end
+  end
+end
+
+
+
+function enemy_die(e, p)
+  if p then
+    player_set_score(p, p.score + 10)
+  end
+
+  e.dead = "animate"
+
+  begin_sound(e.info.die_sound)
+end
+
+
+
+function enemy_shot_by_player(e, p)
+  -- FIXME: implement 'hits' field, flash of red perhaps
+
+  enemy_die(e, p)
 end
 
 
@@ -1082,7 +1132,7 @@ function missile_move(m, dt)
       local e = all_enemies[i]
 
       if missile_hit_actor(m, end_x,end_y, m.x,m.y, e) then
-
+        enemy_shot_by_player(e, m.owner)
         m.dead = "animate"
         return
       end
@@ -1095,8 +1145,7 @@ function missile_move(m, dt)
       local p = all_players[i]
 
       if missile_hit_actor(m, end_x,end_y, m.x,m.y, p) then
-        -- FIXME player_die(p)
-
+        player_die(p)
         m.dead = "animate"
         return
       end
@@ -1117,13 +1166,6 @@ function run_physics(dt)
   end
 
   -- missiles will hit stuff now
-
--- FIXME TEST CRUD
-for i = 1, #all_enemies do
-local e = all_enemies[i]
-e.colliding = false 
-end
-
 
   for i = 1, #all_missiles do
     missile_move(all_missiles[i], dt)
@@ -1263,7 +1305,7 @@ end
 
 
 function load_all_sounds()
-  
+
   local function make_sound(name, data, num_sources, volume, pitch)
     sounds[name] =
     {
