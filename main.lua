@@ -144,12 +144,11 @@ all_players = {}
 
 PLAYER_INFO =
 {
-  player1 =
+  -- stuff shared by all players
+  common =
   {
-    -- props --
-
-    spawn_x = 400,
-    spawn_y = 104,
+    -- draw radius
+    r = 15,
 
     turn_speed = 270,
 
@@ -158,14 +157,6 @@ PLAYER_INFO =
 
     missile_speed = 500,
     missile_len = 20,
-
-    firing_sound = "firing1",
-
-    -- shape --
-
-    r = 15,
-
-    color = { 255,255,255 },
 
     lines =
     {
@@ -184,67 +175,34 @@ PLAYER_INFO =
     }
   },
 
+  player1 =
+  {
+    spawn_x = 400,
+    spawn_y = 104,
+
+    color = { 255,255,255 },
+
+    firing_sound = "firing1",
+  },
 
   player2 =
   {
-    -- props --
-
     spawn_x = 400,
     spawn_y = 140,
 
-    turn_speed = 270,
-
-    thrust_velocity = 500,
-    bounce_friction = 0.88,
-
-    missile_speed = 500,
-    missile_len = 20,
-
-    firing_sound = "firing2",
-
-    -- shape --
-
-    r = 15,
-
     color = { 128,255,255 },
 
-    lines =
-    {
-      { -140, 1.00 },
-      {    0, 1.00 },
-      {  140, 1.00 },
-    }
+    firing_sound = "firing2",
   },
 
   player3 =
   {
-    -- props --
-
     spawn_x = 400,
     spawn_y =  68,
 
-    turn_speed = 270,
-
-    thrust_velocity = 500,
-    bounce_friction = 0.88,
-
-    missile_speed = 500,
-    missile_len = 20,
-
-    firing_sound = "firing3",
-
-    -- shape --
-
-    r = 15,
-
     color = { 255,160,160 },
 
-    lines =
-    {
-      { -140, 1.00 },
-      {    0, 1.00 },
-      {  140, 1.00 }
-    }
+    firing_sound = "firing3",
   },
 }
 
@@ -1253,8 +1211,6 @@ function run_physics(dt)
   -- remove completely dead missiles and enemies
   prune_dead_stuff(all_enemies)
   prune_dead_stuff(all_missiles)
-
-all_players[1].score_str = "__" .. #all_enemies .. "__"
 end
 
 
@@ -1380,6 +1336,34 @@ end
 ------------------------------------------------------------------------
 
 
+function init_screen()
+  INNER_X1 = (SCREEN_W - INNER_W) / 2
+  INNER_Y1 = (SCREEN_H - INNER_H) / 2
+  INNER_X2 = INNER_X1 + INNER_W
+  INNER_Y2 = INNER_Y1 + INNER_H
+
+  OUTER_X1 = BORDER
+  OUTER_Y1 = BORDER
+  OUTER_X2 = SCREEN_W - BORDER
+  OUTER_Y2 = SCREEN_H - BORDER
+end
+
+
+
+function flesh_out_players()
+  for name,info in pairs(PLAYER_INFO) do
+    if name ~= "common" then
+      for k,v in pairs(PLAYER_INFO.common) do
+        if info[k] == nil then
+           info[k] = v
+        end
+      end
+    end
+  end
+end
+
+
+
 function load_all_fonts()
   fonts.title  = love.graphics.setNewFont(36)
   fonts.credit = love.graphics.setNewFont(24)
@@ -1444,15 +1428,8 @@ function love.load()
 
   load_all_sounds()
 
-  INNER_X1 = (SCREEN_W - INNER_W) / 2
-  INNER_Y1 = (SCREEN_H - INNER_H) / 2
-  INNER_X2 = INNER_X1 + INNER_W
-  INNER_Y2 = INNER_Y1 + INNER_H
-
-  OUTER_X1 = BORDER
-  OUTER_Y1 = BORDER
-  OUTER_X2 = SCREEN_W - BORDER
-  OUTER_Y2 = SCREEN_H - BORDER
+  init_screen()
+  flesh_out_players()
 end
 
 
