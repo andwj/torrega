@@ -678,6 +678,8 @@ end
 
 
 function enemy_spawn_all()
+  local level_speed_factor = 1 + (game.round) * 0.25
+
   for ey = 1, 5 do
     for ex = 1, 6 do
       local x = INNER_X1 + ex * 50
@@ -687,7 +689,7 @@ function enemy_spawn_all()
 
       local e = enemy_spawn(x, y, 0, 12, ENEMY_INFO.drone)
 
-      e.speed = e.info.speed * (1.0 + (ex - 1) / 6)
+      e.speed = e.info.speed * (1.0 + (ex - 1) / 6) * level_speed_factor
 
       e.path = path
     end
@@ -750,7 +752,7 @@ end
 
 function new_game()
   game_set_round(1)
-  game_set_lives(0)
+  game_set_lives(2)
 
   player_create_all()
 
@@ -1297,6 +1299,7 @@ function no_players_alive()
 end
 
 
+
 function game_think(dt)
   game.time = game.time + dt
 
@@ -1336,7 +1339,9 @@ function game_think(dt)
   end
 
   if #all_enemies == 0 then
-
+    game_set_round(game.round + 1)
+    new_level()
+    return
   end
 end
 
