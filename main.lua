@@ -515,7 +515,40 @@ end
 
 
 
-function player_reset(p)
+function player_create(id)
+  local info = PLAYER_INFO["player" .. id]
+  assert(info)
+
+  local p = {}
+
+  p.id   = id
+  p.kind = "player"
+  p.info = info
+
+  p.r = 10  -- used for physics
+
+  p.score = 0
+
+  table.insert(all_players, p)
+
+  return p
+end
+
+
+
+function player_create_all()
+  all_players = {}
+
+  player_create(1)
+--player_create(2)
+--player_create(3)
+end
+
+
+
+function player_spawn(p)
+  -- places the player into the level
+
   p.x = p.info.spawn_x
   p.y = p.info.spawn_y
 
@@ -527,26 +560,19 @@ function player_reset(p)
   -- prevent firing immediately on level start (bit of a hack)
   p.is_firing = true
 
-  p.enter_score = 0
+  p.enter_score = p.score
 
   player_set_score(p, p.enter_score)
 end
 
 
 
-function player_spawn(info)
-  local p = {}
+function player_spawn_all()
+  for i = 1, #all_players do
+    local p = all_players[i]
 
-  p.kind = "player"
-  p.info = info
-
-  p.r = 10  -- used for physics
-
-  player_reset(p)
-
-  table.insert(all_players, p)
-
-  return p
+    player_spawn(p)
+  end
 end
 
 
@@ -618,9 +644,7 @@ end
 
 
 
-function enemy_setup()
-  all_enemies  = {}
-
+function enemy_spawn_all()
   for ey = 1, 5 do
     for ex = 1, 6 do
       local x = INNER_X1 + ex * 50
@@ -660,7 +684,7 @@ end
 
 
 
-function game_setup()
+function level_init()
   game.state = "active"
 
   game.time  = 0
@@ -671,23 +695,29 @@ function game_setup()
     game.hit_inners[dir] = -2
   end
 
-  game_set_lives(2)
+  all_missiles = {}
+  all_enemies  = {}
 
-  game_set_round(2)
+  player_spawn_all()
+
+  enemy_spawn_all()
+end
+
+
+
+function new_level()
+  level_init()
 end
 
 
 
 function new_game()
-  game_setup()
+  game_set_round(1)
+  game_set_lives(2)
 
-  all_missiles = {}
+  player_create_all()
 
-  player_spawn(PLAYER_INFO.player1)
---player_spawn(PLAYER_INFO.player2)
---player_spawn(PLAYER_INFO.player3)
-
-  enemy_setup()
+  new_level()
 end
 
 
