@@ -700,7 +700,6 @@ end
 
 function level_init()
   game.state = "active"
-
   game.time  = 0
 
   for dir = 2,8,2 do
@@ -1010,7 +1009,7 @@ function player_think(p, dt)
 
   for i = 1, #all_players do
     local p2 = all_players[i]
-    if p2 ~= p then
+    if p2 ~= p and not p2.dead then
       local dx = p2.x - p.x
       local dy = p2.y - p.y
 
@@ -1299,7 +1298,7 @@ function game_think(dt)
   if no_players_alive() then
     if game.lives < 1 then
       game.state = "over"
-      game.time  = 0
+      game.end_time = game.time
     else
       game_set_lives(game.lives - 1)
 
