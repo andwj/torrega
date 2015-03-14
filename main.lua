@@ -1369,9 +1369,15 @@ function draw_ui()
 
   if all_players[3] then sy = sy - 15 end
 
-  love.graphics.setColor(52, 80, 255)
   love.graphics.setFont(fonts.title)
-  love.graphics.printf(game.round_str, sx - 150, sy, 300, "center")
+
+  if game.state == "over" then
+    love.graphics.setColor(40, 200, 130)
+    love.graphics.printf("Game Over", sx - 150, sy, 300, "center")
+  else
+    love.graphics.setColor(52, 80, 255)
+    love.graphics.printf(game.round_str, sx - 150, sy, 300, "center")
+  end
 
   sy = 310
 
@@ -1406,11 +1412,13 @@ function draw_ui()
 
   if not all_players[2] then sy = sy + 15 end
 
-  love.graphics.setColor(0, 0, 255)
-  love.graphics.printf("Lives:", sx - 110, sy, 100, "right")
+  if game.state ~= "over" then
+    love.graphics.setColor(0, 0, 255)
+    love.graphics.printf("Lives:", sx - 110, sy, 100, "right")
 
-  love.graphics.setColor(176, 176, 176)
-  love.graphics.printf(game.lives_str, sx, sy, 200, "left")
+    love.graphics.setColor(176, 176, 176)
+    love.graphics.printf(game.lives_str, sx, sy, 200, "left")
+  end
 end
 
 
