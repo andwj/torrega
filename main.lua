@@ -1387,14 +1387,14 @@ function draw_ui()
 
   if all_players[2] then
     love.graphics.setColor(96, 192, 192)
-    love.graphics.printf(all_players[1].score_str, sx, sy + 30, 100, "left")
+    love.graphics.printf(all_players[2].score_str, sx, sy + 30, 100, "left")
 
     sy = sy + 30
   end
 
   if all_players[3] then
     love.graphics.setColor(192, 128, 128)
-    love.graphics.printf(all_players[1].score_str, sx, sy + 30, 100, "left")
+    love.graphics.printf(all_players[3].score_str, sx, sy + 30, 100, "left")
 
     sy = sy + 30
   end
