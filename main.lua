@@ -1300,10 +1300,18 @@ end
 function game_think(dt)
   game.time = game.time + dt
 
-  if game.state == "title" then
+  -- start a game?
+  if game.state == "title" or
+     (game.state == "over" and game.time > game.end_time + 4)
+  then
     if love.keyboard.isDown(" ") then
       new_game()
     end
+  end
+
+  if game.state == "over" then
+    level_think(dt)
+    return
   end
 
   if game.state ~= "active" then
@@ -1441,6 +1449,10 @@ function draw_ui()
 
     love.graphics.setColor(176, 176, 176)
     love.graphics.printf(game.lives_str, sx, sy, 200, "left")
+  end
+
+  if game.state == "over" and game.time > game.end_time + 4 then
+    draw_help1()
   end
 end
 
