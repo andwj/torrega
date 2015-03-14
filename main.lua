@@ -31,6 +31,10 @@ INNER_Y1 = 0
 INNER_X2 = 0
 INNER_Y2 = 0
 
+INNER_COLOR = { 0, 0, 255 }
+
+FLASH_TIME = 0.5
+
 
 -- physics are run at 100 fps
 FRAME_TIME = (1 / 100)
@@ -329,33 +333,47 @@ end
 
 
 function draw_outer_edge(dir, x1, y1, x2, y2)
-  local TIME = 0.5
-
   if game.state == "title" then return end
 
-  local qty = game.hit_outers[dir] + TIME - game.time
+  local H = game.hit_outers[dir]
 
-  if qty <= 0 then return end
+  local along = (game.time - H.time) / FLASH_TIME
+  local color = H.color
 
-  qty = (qty / TIME) ^ 0.9
+  assert(along >= 0)
 
-  love.graphics.setColor(255*qty, 255*qty, 0)
+  if along >= 1 then return end
+
+  local qty = (1.0 - along) ^ 0.8
+
+  -- normal color of outer borders is black [ implicit here ]
+
+  love.graphics.setColor(color[1] * qty, color[2] * qty, color[3] * qty)
   love.graphics.line(x1, y1, x2, y2)
 end
 
 
 function draw_inner_edge(dir, x1, y1, x2, y2)
-  local qty = 0
+  local qty   = 0
+  local color = INNER_COLOR
 
   if game.state ~= "title" then
-    qty = game.hit_inners[dir] + 1.0 - game.time
+    local H = game.hit_inners[dir]
 
-    if qty <= 0 then qty = 0 end
+    local along = (game.time - H.time) / FLASH_TIME
+    assert(along >= 0)
+
+    if along < 1 then
+      qty   = (1.0 - along) ^ 0.5
+      color = H.color
+    end
   end
 
-  qty = qty ^ 0.5
+  local r = INNER_COLOR[1] * (1 - qty) + color[1] * qty
+  local g = INNER_COLOR[2] * (1 - qty) + color[2] * qty
+  local b = INNER_COLOR[3] * (1 - qty) + color[3] * qty
 
-  love.graphics.setColor(255*qty, 255*qty, 255*(1-qty))
+  love.graphics.setColor(r, g, b)
   love.graphics.line(x1, y1, x2, y2)
 end
 
@@ -535,8 +553,8 @@ function player_create_all()
   all_players = {}
 
   player_create(1)
---player_create(2)
---player_create(3)
+  player_create(2)
+  player_create(3)
 end
 
 
@@ -688,8 +706,8 @@ function level_init()
   game.time  = 0
 
   for dir = 2,8,2 do
-    game.hit_outers[dir] = -2
-    game.hit_inners[dir] = -2
+    game.hit_outers[dir] = { time=-2 }
+    game.hit_inners[dir] = { time=-2 }
   end
 
   all_missiles = {}
@@ -776,9 +794,7 @@ function fire_missile(p)
   local what, dir = missile_check_hit_wall(x, y, p.x, p.y)
 
   if what then
-    if what == "outer" then game.hit_outers[dir] = game.time end
-    if what == "inner" then game.hit_inners[dir] = game.time end
-
+    player_hit_wall(p, what, dir, "hit_wall")
     return
   end
 
@@ -851,17 +867,24 @@ end
 
 
 
-function player_hit_wall(p, what, dir)
+function player_hit_wall(p, what, dir, sound_name)
   -- flash the wall hit
-  -- IDEA : make flash color match the player color
+  -- Note : used for missiles too!
+
+  local H
 
   if what == "inner" then
-    game.hit_inners[dir] = game.time
+    H = game.hit_inners[dir]
   else
-    game.hit_outers[dir] = game.time
+    H = game.hit_outers[dir]
   end
 
-  begin_sound("hit_wall")
+  H.time  = game.time
+  H.color = p.info.color
+
+  if sound_name then
+    begin_sound(sound_name)
+  end
 end
 
 
@@ -903,26 +926,26 @@ function player_think(p, dt)
   if p.x < OUTER_X1 + p.r then
     p.x = OUTER_X1 + p.r + epsilon
     p.vel_x = - p.vel_x * bounce_friction
-    player_hit_wall(p, "outer", 4)
+    player_hit_wall(p, "outer", 4, "hit_wall")
     return
 
   elseif p.x > OUTER_X2 - p.r then
     p.x = OUTER_X2 - p.r - epsilon
     p.vel_x = - p.vel_x * bounce_friction
-    player_hit_wall(p, "outer", 6)
+    player_hit_wall(p, "outer", 6, "hit_wall")
     return
   end
 
   if p.y < OUTER_Y1 + p.r then
     p.y = OUTER_Y1 + p.r + epsilon
     p.vel_y = - p.vel_y * bounce_friction
-    player_hit_wall(p, "outer", 8)
+    player_hit_wall(p, "outer", 8, "hit_wall")
     return
 
   elseif p.y > OUTER_Y2 - p.r then
     p.y = OUTER_Y2 - p.r - epsilon
     p.vel_y = - p.vel_y * bounce_friction
-    player_hit_wall(p, "outer", 2)
+    player_hit_wall(p, "outer", 2, "hit_wall")
     return
   end
 
@@ -951,12 +974,12 @@ function player_think(p, dt)
         p.x = INNER_X2 + p.r + epsilon
         p.vel_x = - p.vel_x * bounce_friction
         p.vel_x = math.max(-0.1, p.vel_x)
-        player_hit_wall(p, "inner", 6)
+        player_hit_wall(p, "inner", 6, "hit_wall")
       else
         p.x = INNER_X1 - p.r - epsilon
         p.vel_x = - p.vel_x * bounce_friction
         p.vel_x = math.min(0.1, p.vel_x)
-        player_hit_wall(p, "inner", 4)
+        player_hit_wall(p, "inner", 4, "hit_wall")
       end
 
     else -- way == "y"
@@ -965,12 +988,12 @@ function player_think(p, dt)
         p.y = INNER_Y2 + p.r + epsilon
         p.vel_y = - p.vel_y * bounce_friction
         p.vel_y = math.max(-0.1, p.vel_y)
-        player_hit_wall(p, "inner", 2)
+        player_hit_wall(p, "inner", 2, "hit_wall")
       else
         p.y = INNER_Y1 - p.r + epsilon
         p.vel_y = - p.vel_y * bounce_friction
         p.vel_y = math.min(0.1, p.vel_y)
-        player_hit_wall(p, "inner", 8)
+        player_hit_wall(p, "inner", 8, "hit_wall")
       end
 
     end
@@ -1169,10 +1192,9 @@ function missile_think(m, dt)
   if what then
     -- FIXME : move missile onto wall
 
-    if what == "outer" then game.hit_outers[dir] = game.time end
-    if what == "inner" then game.hit_inners[dir] = game.time end
-
-    begin_sound("hit_wall")
+    if m.owner.kind == "player" then
+      player_hit_wall(m.owner, what, dir, "hit_wall")
+    end
 
     m.dead = "animate"
     return
