@@ -35,6 +35,9 @@ INNER_Y2 = 0
 -- physics are run at 100 fps
 FRAME_TIME = (1 / 100)
 
+-- accumulator for very small dt values
+TIME_ACCUM = 0
+
 
 fonts =
 {
@@ -65,11 +68,10 @@ sounds =
 --
 game =
 {
-  -- can be : "none", "active", "wait", "over"
-  state = "none",
+  -- can be : "title", "active", "wait", "over"
+  state = "title",
 
-  time  = 0,
-  delta = 0,
+  time = 0,
 
   -- indexed by DIR (2, 4, 6 or 8)
   hit_outers = {},
@@ -168,9 +170,9 @@ PLAYER_INFO =
     explode_lines =
     {
       { -140, 1.00 },
-      {  -70, 0.90 },
+      {  -70, 0.80 },
       {    0, 1.00 },
-      {   70, 0.90 },
+      {   70, 0.80 },
       {  140, 1.00 },
     }
   },
@@ -314,7 +316,7 @@ end
 
 
 function draw_all_entities()
-  if game.state == "none" then
+  if game.state == "title" then
     return
   end
 
@@ -336,6 +338,8 @@ end
 function draw_outer_edge(dir, x1, y1, x2, y2)
   local TIME = 0.5
 
+  if game.state == "title" then return end
+
   local qty = game.hit_outers[dir] + TIME - game.time
 
   if qty <= 0 then return end
@@ -350,7 +354,7 @@ end
 function draw_inner_edge(dir, x1, y1, x2, y2)
   local qty = 0
 
-  if game.state ~= "none" then
+  if game.state ~= "title" then
     qty = game.hit_inners[dir] + 1.0 - game.time
 
     if qty <= 0 then qty = 0 end
@@ -366,12 +370,10 @@ end
 function draw_map_edges()
   -- draw outer edges (only when hit)
 
-  if game.state ~= "none" then
-    draw_outer_edge(2, OUTER_X1, OUTER_Y2, OUTER_X2, OUTER_Y2)
-    draw_outer_edge(8, OUTER_X1, OUTER_Y1, OUTER_X2, OUTER_Y1)
-    draw_outer_edge(4, OUTER_X1, OUTER_Y1, OUTER_X1, OUTER_Y2)
-    draw_outer_edge(6, OUTER_X2, OUTER_Y1, OUTER_X2, OUTER_Y2)
-  end
+  draw_outer_edge(2, OUTER_X1, OUTER_Y2, OUTER_X2, OUTER_Y2)
+  draw_outer_edge(8, OUTER_X1, OUTER_Y1, OUTER_X2, OUTER_Y1)
+  draw_outer_edge(4, OUTER_X1, OUTER_Y1, OUTER_X1, OUTER_Y2)
+  draw_outer_edge(6, OUTER_X2, OUTER_Y1, OUTER_X2, OUTER_Y2)
 
   -- draw the inner box
 
@@ -549,6 +551,9 @@ end
 function player_spawn(p)
   -- places the player into the level
 
+  p.dead = nil
+  p.explode_along = 0
+
   p.x = p.info.spawn_x
   p.y = p.info.spawn_y
 
@@ -688,7 +693,6 @@ function level_init()
   game.state = "active"
 
   game.time  = 0
-  game.delta = 0
 
   for dir = 2,8,2 do
     game.hit_outers[dir] = -2
@@ -875,7 +879,7 @@ function player_think(p, dt)
       dt = game.time - p.death_time
 
       if dt >= 4 then
-        p.dead = "respawn"
+        p.dead = "dead"
         return
       end
 
@@ -1222,7 +1226,7 @@ end
 
 
 
-function run_physics(dt)
+function level_think(dt)
   for i = 1, #all_enemies do
     enemy_think(all_enemies[i], dt)
   end
@@ -1245,24 +1249,64 @@ end
 
 
 
-function love.update(dt)
-  if game.state == "none" then
-    if love.keyboard.isDown(" ") then
-      new_game()
-    end
-  else
-    game.time = game.time + dt
-
-    game.delta = game.delta + dt
-
-    while game.delta >= FRAME_TIME do
-      run_physics(FRAME_TIME)
-
-      game.delta = game.delta - FRAME_TIME
+function no_players_alive()
+  for i = 1, #all_players do
+    if all_players[i].dead ~= "dead" then
+      return false
     end
   end
 
-  -- this can be used anywhere
+  return true
+end
+
+
+function game_think(dt)
+  game.time = game.time + dt
+
+  if game.state == "title" then
+    if love.keyboard.isDown(" ") then
+      new_game()
+    end
+  end
+
+  if game.state ~= "active" then
+    return
+  end
+
+  -- active game --
+
+  level_think(dt)
+
+  if no_players_alive() then
+    if game.lives < 1 then
+      game.state = "over"
+      game.time  = 0
+    else
+      game_set_lives(game.lives - 1)
+
+      level_init()
+    end
+
+    return
+  end
+
+  if #all_enemies == 0 then
+
+  end
+end
+
+
+
+function love.update(dt)
+  TIME_ACCUM = TIME_ACCUM + dt
+
+  while TIME_ACCUM >= FRAME_TIME do
+    game_think(FRAME_TIME)
+
+    TIME_ACCUM = TIME_ACCUM - FRAME_TIME
+  end
+
+  -- this can be used anywhere [ currently... ]
   if love.keyboard.isDown("escape") then
     love.event.push("quit")
   end
@@ -1296,7 +1340,7 @@ end
 
 
 function draw_ui()
-  if game.state == "none" then
+  if game.state == "title" then
     draw_title_screen()
     return
   end
