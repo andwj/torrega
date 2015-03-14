@@ -163,18 +163,11 @@ PLAYER_INFO =
     lines =
     {
       { -140, 1.00 },
+      {  -70, 0.84 },
       {    0, 1.00 },
+      {   70, 0.84 },
       {  140, 1.00 },
     },
-
-    explode_lines =
-    {
-      { -140, 1.00 },
-      {  -70, 0.80 },
-      {    0, 1.00 },
-      {   70, 0.80 },
-      {  140, 1.00 },
-    }
   },
 
   player1 =
@@ -552,7 +545,7 @@ function player_spawn(p)
   -- places the player into the level
 
   p.dead = nil
-  p.explode_along = 0
+  p.explode_along = nil
 
   p.x = p.info.spawn_x
   p.y = p.info.spawn_y
