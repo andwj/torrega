@@ -1299,6 +1299,17 @@ function no_players_alive()
 end
 
 
+function no_players_firing()
+  for i = 1, #all_players do
+    if all_players[i].is_firing then
+      return false
+    end
+  end
+
+  return true
+end
+
+
 
 function game_think(dt)
   game.time = game.time + dt
