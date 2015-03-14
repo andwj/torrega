@@ -317,6 +317,23 @@ function draw_all_entities()
     return
   end
 
+  if game.state == "over" and game.time > game.end_time + 5 then
+    return
+  end
+
+  love.graphics.push()
+
+  if game.state == "over" and game.time > game.end_time + 1 then
+    local along = game.time - (game.end_time + 1)
+    local scale = 1 + along ^ 2 / 3
+
+    local dx = SCREEN_W * (scale - 1) / 2 
+    local dy = SCREEN_H * (scale - 1) / 2
+
+    love.graphics.translate(-dx, -dy)
+    love.graphics.scale(scale)
+  end
+
   for i = 1, #all_missiles do
     missile_draw(all_missiles[i])
   end
@@ -328,6 +345,8 @@ function draw_all_entities()
   for i = 1, #all_players do
     player_draw(all_players[i])
   end
+
+  love.graphics.pop()
 end
 
 
@@ -731,7 +750,7 @@ end
 
 function new_game()
   game_set_round(1)
-  game_set_lives(2)
+  game_set_lives(0)
 
   player_create_all()
 
@@ -1335,6 +1354,18 @@ end
 ---=== UI STUFF ======--------------------------------------
 
 
+function draw_help1()
+  love.graphics.setFont(fonts.normal)
+  love.graphics.setColor(216, 216, 216)
+  love.graphics.printf("press SPACE to start", 300, 450, 300, "left")
+
+  love.graphics.setColor(176, 176, 176)
+  love.graphics.printf("press ESC to quit",    300, 490, 300, "left")
+  love.graphics.printf("press O for options",  300, 530, 300, "left")
+end
+
+
+
 function draw_title_screen()
   love.graphics.setColor(104, 160, 255)
   love.graphics.setFont(fonts.title)
@@ -1344,13 +1375,7 @@ function draw_title_screen()
   love.graphics.setFont(fonts.credit)
   love.graphics.printf("by Andrew Apted", 250, 310, 300, "center")
 
-  love.graphics.setFont(fonts.normal)
-  love.graphics.setColor(216, 216, 216)
-  love.graphics.printf("press SPACE to start", 300, 450, 300, "left")
-
-  love.graphics.setColor(176, 176, 176)
-  love.graphics.printf("press ESC to quit",    300, 490, 300, "left")
-  love.graphics.printf("press O for options",  300, 530, 300, "left")
+  draw_help1()
 end
 
 
