@@ -576,8 +576,6 @@ function player_spawn(p)
   -- prevent firing immediately on level start (bit of a hack)
   p.is_firing = true
 
-  p.enter_score = p.score
-
   player_set_score(p, p.enter_score)
 end
 
@@ -721,6 +719,12 @@ end
 
 
 function new_level()
+  -- remember scores of players
+  for i = 1, #all_players do
+    local p = all_players[i]
+    p.enter_score = p.score
+  end
+
   level_init()
 end
 
