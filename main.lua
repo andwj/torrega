@@ -221,7 +221,7 @@ all_missiles = {}
 
 
 
------- RENDERING ---------------------
+---=== RENDERING ======-------------------------------
 
 
 function actor_draw(a, info)
@@ -396,7 +396,7 @@ end
 
 
 
------- PHYSICS ---------------------
+---=== PHYSICS ======-----------------------------------
 
 
 function actor_hit_line_raw(a, tx1,ty1, tx2,ty2)
@@ -553,8 +553,8 @@ function player_create_all()
   all_players = {}
 
   player_create(1)
-  player_create(2)
-  player_create(3)
+--player_create(2)
+--player_create(3)
 end
 
 
@@ -1332,9 +1332,7 @@ end
 
 
 
-------------------------------------------------------------------------
---  UI STUFF (Menu, Score, etc)
-------------------------------------------------------------------------
+---=== UI STUFF ======--------------------------------------
 
 
 function draw_title_screen()
@@ -1431,9 +1429,7 @@ end
 
 
 
-------------------------------------------------------------------------
---  RESOURCE HANDLING
-------------------------------------------------------------------------
+---=== RESOURCE LOADING ======------------------------------
 
 
 function init_screen()
