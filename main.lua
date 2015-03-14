@@ -178,8 +178,8 @@ PLAYER_INFO =
 
   player1 =
   {
-    spawn_x = 400,
-    spawn_y = 104,
+    spawn_x = 150,
+    spawn_y = 114,
 
     color = { 255,255,255 },
 
@@ -188,8 +188,8 @@ PLAYER_INFO =
 
   player2 =
   {
-    spawn_x = 400,
-    spawn_y = 140,
+    spawn_x = 150,
+    spawn_y = 144,
 
     color = { 128,255,255 },
 
@@ -198,7 +198,7 @@ PLAYER_INFO =
 
   player3 =
   {
-    spawn_x = 400,
+    spawn_x =  70,
     spawn_y =  68,
 
     color = { 255,160,160 },
@@ -680,7 +680,7 @@ end
 
 
 function enemy_spawn_all()
-  local level_speed_factor = 1 + (game.round) * 0.25
+  local speed_factor = 1 + (game.round - 1) * 0.1
 
   for ey = 1, 5 do
     for ex = 1, 6 do
@@ -691,7 +691,7 @@ function enemy_spawn_all()
 
       local e = enemy_spawn(x, y, 0, 12, ENEMY_INFO.drone)
 
-      e.speed = e.info.speed * (1.0 + (ex - 1) / 6) * level_speed_factor
+      e.speed = e.info.speed * (1.0 + (ex - 1) / 6) * speed_factor
 
       e.path = path
     end
@@ -754,7 +754,7 @@ end
 
 function new_game()
   game_set_round(1)
-  game_set_lives(2)
+  game_set_lives(3)
 
   player_create_all()
 
