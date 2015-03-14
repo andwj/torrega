@@ -112,6 +112,8 @@ ENEMY_INFO =
     speed = 80,
     turn_speed = 360,
 
+    score = 30,
+
     die_sound = "drone_die",
 
     -- shape --
@@ -162,7 +164,7 @@ PLAYER_INFO =
     bounce_friction = 0.88,
 
     missile_speed = 500,
-    missile_len = 20,
+    missile_len = 18,
 
     lines =
     {
@@ -1077,7 +1079,7 @@ end
 
 function enemy_die(e, p)
   if p then
-    player_set_score(p, p.score + 10)
+    player_set_score(p, p.score + e.info.score)
   end
 
   e.dead = "animate"
