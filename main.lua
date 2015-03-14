@@ -171,7 +171,16 @@ PLAYER_INFO =
     {
       { -140, 1.00 },
       {    0, 1.00 },
-      {  140, 1.00 }
+      {  140, 1.00 },
+    },
+
+    explode_lines =
+    {
+      { -140, 1.00 },
+      {  -70, 0.90 },
+      {    0, 1.00 },
+      {   70, 0.90 },
+      {  140, 1.00 },
     }
   },
 
@@ -203,7 +212,7 @@ PLAYER_INFO =
     {
       { -140, 1.00 },
       {    0, 1.00 },
-      {  140, 1.00 }
+      {  140, 1.00 },
     }
   },
 
@@ -259,7 +268,14 @@ all_missiles = {}
 
 
 function actor_draw(a, info)
+  local explode_along = a.explode_along
+
   love.graphics.setColor(info.color[1], info.color[2], info.color[3])
+
+  if explode_along then
+    local f = (1.0 - explode_along) ^ 0.7
+    love.graphics.setColor(info.color[1] * f, info.color[2] * f, info.color[3] * f)
+  end
 
 if a.colliding then
 love.graphics.setColor(255, 0, 0)
@@ -268,8 +284,14 @@ end
   local last_x
   local last_y
 
-  for i = 1, #info.lines do
-    local point = info.lines[i]
+  local lines = info.lines
+
+  if explode_along then
+    lines = info.explode_lines or lines
+  end
+
+  for i = 1, #lines do
+    local point = lines[i]
 
     local ang = a.angle + point[1]
     local r   = info.r  * point[2]
@@ -280,7 +302,25 @@ end
     local y = a.y + dy
 
     if last_x then
-      love.graphics.line(last_x, last_y, x, y)
+      -- the explosion effect
+      if explode_along then
+        local mx = (last_x + x) / 2
+        local my = (last_y + y) / 2
+
+        local nx, ny = geom.normalize(mx - a.x, my - a.y)
+
+        local dist = 300 * explode_along
+
+        local x1 = last_x + nx * dist
+        local y1 = last_y + ny * dist
+
+        local x2 = x + nx * dist
+        local y2 = y + ny * dist
+
+        love.graphics.line(x1, y1, x2, y2)
+      else
+        love.graphics.line(last_x, last_y, x, y)
+      end
     end
 
     last_x = x
@@ -570,6 +610,7 @@ function enemy_spawn(x, y, angle, r, info)
 end
 
 
+
 function missile_spawn(owner, x, y, angle, speed, color, target_length)
   local m = {}
 
@@ -840,9 +881,19 @@ end
 
 
 
-function player_move(p, dt)
+function player_think(p, dt)
   if p.dead then
-    -- FIXME: death animation
+    if p.dead == "animate" then
+      dt = game.time - p.death_time
+
+      if dt >= 4 then
+        p.dead = "respawn"
+        return
+      end
+
+      p.explode_along = dt / 4
+    end
+
     return
   end
 
@@ -970,6 +1021,7 @@ end
 
 function player_die(p)
   p.dead = "animate"
+  p.death_time = game.time
 
   begin_sound("explosion")
 end
@@ -997,6 +1049,7 @@ function enemy_die(e, p)
   end
 
   e.dead = "animate"
+  e.death_time = game.time
 
   begin_sound(e.info.die_sound)
 end
@@ -1011,9 +1064,19 @@ end
 
 
 
-function enemy_move(e, dt)
+function enemy_think(e, dt)
   if e.dead then
-    -- FIXME : death animation
+    if e.dead == "animate" then
+      dt = game.time - e.death_time
+
+      if dt >= 4 then
+        e.dead = "remove"
+        return
+      end
+
+      e.explode_along = dt / 4
+    end
+
     return
   end
 
@@ -1085,7 +1148,7 @@ end
 
 
 
-function missile_move(m, dt)
+function missile_think(m, dt)
   if m.dead then
     -- shrink length while dying
     if m.dead == "animate" then
@@ -1173,25 +1236,25 @@ end
 
 function run_physics(dt)
   for i = 1, #all_enemies do
-    enemy_move(all_enemies[i], dt)
+    enemy_think(all_enemies[i], dt)
   end
 
   for i = 1, #all_players do
-    player_move(all_players[i], dt)
+    player_think(all_players[i], dt)
     player_check_hit_enemy(all_players[i])
   end
 
   -- missiles will hit stuff now
 
   for i = 1, #all_missiles do
-    missile_move(all_missiles[i], dt)
+    missile_think(all_missiles[i], dt)
   end
 
   -- remove completely dead missiles and enemies
   prune_dead_stuff(all_enemies)
   prune_dead_stuff(all_missiles)
 
-all_players[1].score_str = "__" .. #all_missiles .. "__"
+all_players[1].score_str = "__" .. #all_enemies .. "__"
 end
 
 
@@ -1374,7 +1437,7 @@ function love.load()
 
   load_all_fonts()
 
-  love.window.setMode(800, 600, {fullscreen=false})
+  love.window.setMode(800, 600, {fullscreen=true})
   love.window.setTitle("Torrega Race")
 
   love.audio.setVolume(0.5)
