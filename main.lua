@@ -156,6 +156,7 @@ ENEMY_INFO =
     -- shape --
 
     r = 20,
+    bounce_r = 15,
 
     color = { 255,0,0 },
 
@@ -192,6 +193,9 @@ PLAYER_INFO =
   {
     -- draw radius
     r = 15,
+
+    -- radius for bouncing off walls
+    bounce_r = 10,
 
     turn_speed = 270,
 
@@ -600,8 +604,6 @@ function player_create(id)
   p.kind = "player"
   p.info = info
 
-  p.r = 10  -- used for physics
-
   p.score = 0
 
   table.insert(all_players, p)
@@ -653,7 +655,7 @@ end
 
 
 
-function enemy_spawn(x, y, angle, r, info)
+function enemy_spawn(x, y, angle, info)
   local e = {}
 
   e.kind = "enemy"
@@ -662,7 +664,6 @@ function enemy_spawn(x, y, angle, r, info)
   e.x = x
   e.y = y
   e.angle = angle
-  e.r = r
 
   table.insert(all_enemies, e)
 
@@ -730,7 +731,7 @@ function enemy_spawn_all()
       local path = enemy_make_drone_path(ey)
       local y = path[1].y
 
-      local e = enemy_spawn(x, y, 0, 12, ENEMY_INFO.drone)
+      local e = enemy_spawn(x, y, 0, ENEMY_INFO.drone)
 
       e.speed = e.info.speed * (1.0 + (ex - 1) / 6) * speed_factor
 
@@ -738,7 +739,7 @@ function enemy_spawn_all()
     end
   end
 
-  local e = enemy_spawn(700, 500, 0, 12, ENEMY_INFO.hunter)
+  local e = enemy_spawn(700, 500, 0, ENEMY_INFO.hunter)
 end
 
 
@@ -979,8 +980,10 @@ function player_think(p, dt)
 
   -- p can be a player or enemy ship
 
-  local old_inside_x = (INNER_X1 - p.r <= p.x) and (p.x <= INNER_X2 + p.r)
-  local old_inside_y = (INNER_Y1 - p.r <= p.y) and (p.y <= INNER_Y2 + p.r)
+  local r = p.info.bounce_r
+
+  local old_inside_x = (INNER_X1 - r <= p.x) and (p.x <= INNER_X2 + r)
+  local old_inside_y = (INNER_Y1 - r <= p.y) and (p.y <= INNER_Y2 + r)
 
   p.x = p.x + p.vel_x * dt
   p.y = p.y + p.vel_y * dt
@@ -992,27 +995,27 @@ function player_think(p, dt)
 
   local bounce_friction = p.info.bounce_friction
 
-  if p.x < OUTER_X1 + p.r then
-    p.x = OUTER_X1 + p.r + epsilon
+  if p.x < OUTER_X1 + r then
+    p.x = OUTER_X1 + r + epsilon
     p.vel_x = - p.vel_x * bounce_friction
     player_hit_wall(p, "outer", 4, "hit_wall")
     return
 
-  elseif p.x > OUTER_X2 - p.r then
-    p.x = OUTER_X2 - p.r - epsilon
+  elseif p.x > OUTER_X2 - r then
+    p.x = OUTER_X2 - r - epsilon
     p.vel_x = - p.vel_x * bounce_friction
     player_hit_wall(p, "outer", 6, "hit_wall")
     return
   end
 
-  if p.y < OUTER_Y1 + p.r then
-    p.y = OUTER_Y1 + p.r + epsilon
+  if p.y < OUTER_Y1 + r then
+    p.y = OUTER_Y1 + r + epsilon
     p.vel_y = - p.vel_y * bounce_friction
     player_hit_wall(p, "outer", 8, "hit_wall")
     return
 
-  elseif p.y > OUTER_Y2 - p.r then
-    p.y = OUTER_Y2 - p.r - epsilon
+  elseif p.y > OUTER_Y2 - r then
+    p.y = OUTER_Y2 - r - epsilon
     p.vel_y = - p.vel_y * bounce_friction
     player_hit_wall(p, "outer", 2, "hit_wall")
     return
@@ -1020,8 +1023,8 @@ function player_think(p, dt)
 
   -- bounce off inner box
 
-  local inside_x = (INNER_X1 - p.r <= p.x) and (p.x <= INNER_X2 + p.r)
-  local inside_y = (INNER_Y1 - p.r <= p.y) and (p.y <= INNER_Y2 + p.r)
+  local inside_x = (INNER_X1 - r <= p.x) and (p.x <= INNER_X2 + r)
+  local inside_y = (INNER_Y1 - r <= p.y) and (p.y <= INNER_Y2 + r)
 
   if inside_x and inside_y then
     -- figure out if we hit the top/bottom ("y") or the left/right sides ("x")
@@ -1040,12 +1043,12 @@ function player_think(p, dt)
 
     if way == "x" then
       if p.x > SCREEN_W/2 then
-        p.x = INNER_X2 + p.r + epsilon
+        p.x = INNER_X2 + r + epsilon
         p.vel_x = - p.vel_x * bounce_friction
         p.vel_x = math.max(-0.1, p.vel_x)
         player_hit_wall(p, "inner", 6, "hit_wall")
       else
-        p.x = INNER_X1 - p.r - epsilon
+        p.x = INNER_X1 - r - epsilon
         p.vel_x = - p.vel_x * bounce_friction
         p.vel_x = math.min(0.1, p.vel_x)
         player_hit_wall(p, "inner", 4, "hit_wall")
@@ -1054,12 +1057,12 @@ function player_think(p, dt)
     else -- way == "y"
 
       if p.y > SCREEN_H/2 then
-        p.y = INNER_Y2 + p.r + epsilon
+        p.y = INNER_Y2 + r + epsilon
         p.vel_y = - p.vel_y * bounce_friction
         p.vel_y = math.max(-0.1, p.vel_y)
         player_hit_wall(p, "inner", 2, "hit_wall")
       else
-        p.y = INNER_Y1 - p.r + epsilon
+        p.y = INNER_Y1 - r + epsilon
         p.vel_y = - p.vel_y * bounce_friction
         p.vel_y = math.min(0.1, p.vel_y)
         player_hit_wall(p, "inner", 8, "hit_wall")
@@ -1079,7 +1082,7 @@ function player_think(p, dt)
       local dx = p2.x - p.x
       local dy = p2.y - p.y
 
-      local dist = p.r * 3 - geom.vec_len(dx, dy)
+      local dist = r * 3 - geom.vec_len(dx, dy)
 
       if dist > 0 then
         -- circles intersect : apply a repulsive force
