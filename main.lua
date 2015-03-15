@@ -728,7 +728,9 @@ end
 
 
 function enemy_spawn_all()
-  local speed_factor = 1 + (game.round - 1) * 0.1
+  local speed_factor = 1.4 + (game.round - 1) * 0.05
+
+  -- spawn drones
 
   for ey = 1, 4 do
     for ex = 1, 4 do
@@ -745,7 +747,17 @@ function enemy_spawn_all()
     end
   end
 
-  local e = enemy_spawn(700, 500, 0, ENEMY_INFO.hunter)
+  -- spawn hunters
+
+  local hunter_num = 0
+  if game.round >=  2 then hunter_num = hunter_num + 1 end
+  if game.round >=  4 then hunter_num = hunter_num + 1 end
+  if game.round >=  7 then hunter_num = hunter_num + 1 end
+  if game.round >= 10 then hunter_num = hunter_num + 1 end
+
+  for hy = 1, hunter_num do
+    local e = enemy_spawn(700, 500 - hy * 100, 0, ENEMY_INFO.hunter)
+  end
 end
 
 
