@@ -2,7 +2,7 @@
 --
 --  Torrega Race
 --
---  by Andrew Apted
+--  by Andrew Apted, 2015
 --
 --  under the GNU GPLv3 (or later) license
 --
@@ -146,7 +146,7 @@ ENEMY_INFO =
 
     name = "hunter",
 
-    hits = 5,
+    hits = 1,
 
     speed = 80,
     damp_speed = 2,
@@ -882,8 +882,6 @@ function fire_missile(p)
   local x = p.x + p.info.r * dx
   local y = p.y + p.info.r * dy
 
-  -- TODO : play a sound
-
   -- don't spawn a missile if it is already off the map
 
   local what, dir = missile_check_hit_wall(x, y, p.x, p.y)
@@ -894,6 +892,8 @@ function fire_missile(p)
   end
 
   local m = missile_spawn(p, x, y, p.angle, p.info.missile_speed, p.info.color, p.info.missile_len)
+
+  begin_sound(p.info.firing_sound)
 end
 
 
@@ -954,8 +954,6 @@ function player_input(p, dt)
 
     if fire then
       fire_missile(p)
-
-      begin_sound(p.info.firing_sound)
     end
   end
 end
@@ -1057,7 +1055,7 @@ function player_think(p, dt)
 
     if not old_inside_x and not old_inside_y then
       -- hit at a corner
-      way = "x"  -- TODO : check velocity
+      way = "x"
 
     elseif old_inside_x then
       way = "y"
@@ -1162,7 +1160,7 @@ end
 
 
 function enemy_shot_by_player(e, p)
-  -- FIXME: implement 'hits' field, flash of red perhaps
+  -- TODO: implement 'hits' field, flash a different color
 
   enemy_die(e, p)
 end
@@ -1342,14 +1340,17 @@ function enemy_fly_in_curves(e, dt)
 
 
   -- travel towards a player
-  -- FIXME : pick other players in multiplayer game
-  -- FIXME : check if dead
 
-  local pdx = all_players[1].x - e.x
-  local pdy = all_players[1].y - e.y
+  -- TODO: in multiplayer game, pick other players
+  local p_target = all_players[1]
 
-  e.vel_x = e.vel_x + pdx / 250 * dt
-  e.vel_y = e.vel_y + pdy / 250 * dt
+  if not p_target.dead then
+    local pdx = p_target.x - e.x
+    local pdy = p_target.y - e.y
+
+    e.vel_x = e.vel_x + pdx / 250 * dt
+    e.vel_y = e.vel_y + pdy / 250 * dt
+  end
 
 
   -- apply a dampening if speed becomes high
