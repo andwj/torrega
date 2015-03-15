@@ -3,6 +3,30 @@
 --
 
 
+function clamp(m)
+  if m < -1 then return -1 end
+  if m >  1 then return  1 end
+
+  return m
+end
+
+
+
+function envelope_start(along, len)
+  if not len then len = 0.03 end
+
+  if along >= len then return 1.0 end
+
+  return along / len
+end
+
+
+function envelope_end(along, len)
+  return envelope_start(1 - along, len)
+end
+
+
+
 function gen_firing_sound()
   local length = 11000
   local rate   = 22050
@@ -18,6 +42,8 @@ function gen_firing_sound()
     if m > 24 then m = 50 - m end
 
     m = (m - 12.5) / 12.5
+
+    m = m * envelope_start(along) * envelope_end(along)
 
     data:setSample(i, m)
   end
@@ -104,8 +130,9 @@ function gen_wah_wah_sound()
 
     local m = (m1 + m2 + m3 + m4) / 3
 
-    if m >  1 then m =  1 end
-    if m < -1 then m = -1 end
+    m = clamp(m)
+
+    m = m * envelope_start(along, 0.1) * envelope_end(along, 0.4)
 
     data:setSample(i, m)
   end
