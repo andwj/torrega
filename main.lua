@@ -210,12 +210,17 @@ PLAYER_INFO =
 
     lines =
     {
-      -- for a more unique shape, uncomment two lines below (at -70 and 70 degrees)
-
       { -140, 1.00 },
---    {  -70, 0.84 },
       {    0, 1.00 },
---    {   70, 0.84 },
+      {  140, 1.00 },
+    },
+
+    explode_lines =
+    {
+      { -140, 1.00 },
+      {  -70, 0.84 },
+      {    0, 1.00 },
+      {   70, 0.84 },
       {  140, 1.00 },
     },
   },
@@ -1791,6 +1796,10 @@ function load_all_sounds()
   local explosion_data = gen_explosion_sound()
 
   make_sound("explosion", explosion_data, 2, 1.0, 0.50)
+
+  local wah1_data = gen_wah_wah_sound()
+
+  make_sound("drone_die", wah1_data, 3, 1.0, 1.5)
 end
 
 
