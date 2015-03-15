@@ -278,7 +278,7 @@ all_missiles = {}
 
 
 
----=== RENDERING ======-------------------------------
+---=== RENDERING ======-------------------------------------
 
 
 function actor_draw(a, info)
@@ -1602,10 +1602,31 @@ function love.update(dt)
 
     TIME_ACCUM = TIME_ACCUM - FRAME_TIME
   end
+end
 
-  -- this can be used anywhere [ currently... ]
-  if love.keyboard.isDown("escape") then
+
+
+function toggle_fullscreen()
+  if love.window.getFullscreen() then
+    love.window.setFullscreen(false)
+    love.mouse.setVisible(true)
+  else
+    love.window.setFullscreen(true)
+    love.mouse.setVisible(false)
+  end
+end
+
+
+
+function love.keypressed(key)
+  -- these can be used anywhere [ currently... ]
+
+  if key == "escape" then
     love.event.push("quit")
+  end
+
+  if key == "o" then
+    toggle_fullscreen()
   end
 end
 
@@ -1620,8 +1641,8 @@ function draw_help1()
   love.graphics.printf("press SPACE to start", 300, 450, 300, "left")
 
   love.graphics.setColor(176, 176, 176)
-  love.graphics.printf("press ESC to quit",    300, 490, 300, "left")
-  love.graphics.printf("press O for options",  300, 530, 300, "left")
+  love.graphics.printf("press ESC to quit",       300, 490, 300, "left")
+  love.graphics.printf("press O for fullscreen",  300, 530, 300, "left")
 end
 
 
@@ -1846,26 +1867,25 @@ end
 function love.load()
   love.filesystem.setIdentity("torrega_race")
 
-  love.graphics.setColor(255,255,255)
-  love.graphics.setBackgroundColor(0,0,0)
-
-  load_all_fonts()
-
   love.window.setMode(800, 600, {fullscreen=false})
   love.window.setTitle("Torrega Race")
+
+  love.graphics.setColor(255,255,255)
+  love.graphics.setBackgroundColor(0,0,0)
 
   love.audio.setVolume(0.5)
 
   math.randomseed(os.time())
 
+  load_all_fonts()
   load_all_sounds()
 
   init_screen()
+
   flesh_out_players()
 
   game.score_file = love.filesystem.newFile("hiscore.txt")
 
   load_high_score()
 end
-
 
