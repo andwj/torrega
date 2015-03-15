@@ -149,7 +149,7 @@ ENEMY_INFO =
     hits = 5,
 
     speed = 80,
-    damp_speed = 3,
+    damp_speed = 2,
 
     score = 250,
 
@@ -375,7 +375,7 @@ function draw_all_entities()
 
   if game.state == "over" and game.time > game.end_time + 1 then
     local along = game.time - (game.end_time + 1)
-    local scale = 1 + along ^ 2 / 3
+    local scale = 1 + (along / 1.7) ^ 2
 
     local dx = SCREEN_W * (scale - 1) / 2
     local dy = SCREEN_H * (scale - 1) / 2
@@ -816,7 +816,7 @@ end
 
 function new_game()
   game_set_round(1)
-  game_set_lives(3)
+  game_set_lives(0)
 
   player_create_all()
 
@@ -1346,9 +1346,11 @@ function enemy_fly_in_curves(e, dt)
 
 
   -- apply a dampening if speed becomes high
+  local speed_factor = 1.0 + (game.round - 2) * 0.07
+
   vel = geom.vec_len(e.vel_x, e.vel_y)
 
-  local factor = vel / e.info.damp_speed
+  local factor = vel / (e.info.damp_speed * speed_factor)
   if factor > 1 then
     e.vel_x = e.vel_x / factor
     e.vel_y = e.vel_y / factor
