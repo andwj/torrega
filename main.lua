@@ -665,6 +665,9 @@ function enemy_spawn(x, y, angle, info)
   e.y = y
   e.angle = angle
 
+  e.vel_x = 0
+  e.vel_y = 0
+
   table.insert(all_enemies, e)
 
   return e
@@ -724,7 +727,7 @@ end
 function enemy_spawn_all()
   local speed_factor = 1 + (game.round - 1) * 0.1
 
-  for ey = 1, 0 do  -- FIXME
+  for ey = 1, 1 do  -- FIXME
     for ex = 1, 6 do
       local x = INNER_X1 + ex * 50
 
@@ -1144,6 +1147,69 @@ end
 
 
 
+function enemy_turn_to_angle(e, dt)
+  local diff = geom.angle_diff(e.angle, e.target_angle)
+
+  local turn = e.info.turn_speed * dt
+
+  if math.abs(diff) <= math.abs(turn) then
+    -- reached it
+    e.angle = e.target_angle
+    e.target_angle = nil
+  else
+    if diff < 0 then turn = -turn end
+
+    e.angle = geom.angle_add(e.angle, turn)
+  end
+end
+
+
+
+function enemy_follow_path(e, dt)
+  local move_dist = e.speed * dt
+
+  local dx = e.path[1].x - e.x
+  local dy = e.path[1].y - e.y
+
+  local dist = geom.vec_len(dx, dy)
+
+  -- reached target?
+  if dist <= move_dist then
+
+    e.x = e.path[1].x
+    e.y = e.path[1].y
+
+    local PREV = table.remove(e.path, 1)
+
+    -- move to end of list, to cycle indefinitely
+    table.insert(e.path, PREV)
+
+    if e.path[1] == nil then
+      -- reached end of path
+      e.path = nil
+      return
+    end
+
+    -- begin turning to face next point
+    e.target_angle = geom.calc_angle(e.path[1].x - e.x, e.path[1].y - e.y)
+    e.vel_x = 0
+    e.vel_y = 0
+
+    return
+  end
+
+  local nx, ny = geom.normalize(dx, dy)
+
+  -- this not used directly, mainly to help predict future positions
+  e.vel_x = nx * e.speed
+  e.vel_y = ny * e.speed
+
+  e.x = e.x + nx * move_dist
+  e.y = e.y + ny * move_dist
+end
+
+
+
 function enemy_think(e, dt)
   if e.dead then
     if e.dead == "animate" then
@@ -1163,60 +1229,14 @@ function enemy_think(e, dt)
 
   -- turning?
   if e.target_angle then
-    local diff = geom.angle_diff(e.angle, e.target_angle)
-
-    local turn = e.info.turn_speed * dt
-
-    if math.abs(diff) <= math.abs(turn) then
-      -- reached it
-      e.angle = e.target_angle
-      e.target_angle = nil
-    else
-      if diff < 0 then turn = -turn end
-
-      e.angle = geom.angle_add(e.angle, turn)
-    end
-
+    enemy_turn_to_angle(e, dt)
     return
   end
 
 
   -- follow a path?
   if e.path then
-    local move_dist = e.speed * dt
-
-    local dx = e.path[1].x - e.x
-    local dy = e.path[1].y - e.y
-
-    local dist = geom.vec_len(dx, dy)
-
-    -- reached target?
-    if dist <= move_dist then
-
-      e.x = e.path[1].x
-      e.y = e.path[1].y
-
-      local PREV = table.remove(e.path, 1)
-
-      -- move to end of list, to cycle indefinitely
-      table.insert(e.path, PREV)
-
-      if e.path[1] == nil then
-        -- reached end of path
-        e.path = nil
-        return
-      end
-
-      -- begin turning to face next point
-      e.target_angle = geom.calc_angle(e.path[1].x - e.x, e.path[1].y - e.y)
-      return
-    end
-
-    local nx, ny = geom.normalize(dx, dy)
-
-    e.x = e.x + nx * move_dist
-    e.y = e.y + ny * move_dist
-
+    enemy_follow_path(e, dt)
     return
   end
 
