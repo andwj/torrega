@@ -1798,8 +1798,10 @@ function load_all_sounds()
   make_sound("explosion", explosion_data, 2, 1.0, 0.50)
 
   local wah1_data = gen_wah_wah_sound()
+  local wah2_data = gen_wah_wah_sound("long_ver")
 
-  make_sound("drone_die", wah1_data, 3, 1.0, 1.0)
+  make_sound("drone_die",  wah1_data, 3, 1.0, 1.0)
+  make_sound("hunter_die", wah2_data, 2, 1.0, 1.7)
 end
 
 

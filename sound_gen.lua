@@ -107,9 +107,11 @@ end
 
 
 
-function gen_wah_wah_sound()
+function gen_wah_wah_sound(long_ver)
   local length = 12000
   local rate   = 22050
+
+  if long_ver then length = length * 6 end
 
   local data = love.sound.newSoundData(length, rate, 16, 1)
 
@@ -130,11 +132,14 @@ function gen_wah_wah_sound()
 
     local m = (m1 + m2 + m3 + m4) / 3
 
-    m = clamp(m)
+    if long_ver then
+      local trem = math.sin(along * math.pi * 32)
+      m = m * (0.7 + trem * 0.7)
+    end
 
     m = m * envelope_start(along, 0.1) * envelope_end(along, 0.4)
 
-    data:setSample(i, m)
+    data:setSample(i, clamp(m))
   end
 
   return data
