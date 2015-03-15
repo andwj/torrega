@@ -1210,6 +1210,121 @@ end
 
 
 
+function calc_wall_normal(kind, dir, x, y)
+  if kind == "inner" then
+    dir = 10 - dir
+  end
+
+  if dir == 4 then return  1, 0 end
+  if dir == 6 then return -1, 0 end
+
+  if dir == 8 then return 0,  1 end
+  if dir == 2 then return 0, -1 end
+
+  error("calc_wall_normal: bad dir")
+end
+
+
+
+function calc_dist_to_wall(kind, dir, x, y)
+  if kind == "outer" then
+    -- prevent negative result (in case ship crosses over the line)
+
+    if dir == 4 then return math.max(0, x - OUTER_X1)
+    if dir == 6 then return math.max(0, OUTER_X2 - x)
+
+    if dir == 8 then return math.max(0, y - OUTER_Y1)
+    if dir == 2 then return math.max(0, OUTER_Y2 - y)
+  end
+
+  -- inner wall --
+
+  if dir == 4 then
+    local dist = math.abs(x - INNER_X1)
+
+    if y < INNER_Y1 then dist = dist + math.abs(y - INNER_Y1) * 0.5 end
+    if y > INNER_Y2 then dist = dist + math.abs(y - INNER_Y2) * 0.5 end
+    if x > INNER_X1 then dist = dist * 2 end
+
+    return dist
+  end
+
+  if dir == 6 then
+    local dist = math.abs(x - INNER_X2)
+
+    if y < INNER_Y1 then dist = dist + math.abs(y - INNER_Y1) * 0.5 end
+    if y > INNER_Y2 then dist = dist + math.abs(y - INNER_Y2) * 0.5 end
+    if x < INNER_X2 then dist = dist * 2 end
+
+    return dist
+  end
+
+  if dir == 8 then
+    local dist = math.abs(y - INNER_Y1)
+
+    if x < INNER_X1 then dist = dist + math.abs(x - INNER_X1) * 0.5 end
+    if x > INNER_X2 then dist = dist + math.abs(x - INNER_X2) * 0.5 end
+    if y > INNER_Y1 then dist = dist * 2 end
+
+    return dist
+  end
+
+  if dir == 2 then
+    local dist = math.abs(y - INNER_Y2)
+
+    if x < INNER_X1 then dist = dist + math.abs(x - INNER_X1) * 0.5 end
+    if x > INNER_X2 then dist = dist + math.abs(x - INNER_X2) * 0.5 end
+    if y < INNER_Y2 then dist = dist * 2 end
+
+    return dist
+  end
+
+  error("calc_dist_to_wall: bad dir")
+end
+
+
+
+function enemy_fly_in_curves(e, dt)
+  -- used for the hunter
+
+  
+  local vel = geom.vec_len(e.vel_x, e.vel_y)
+
+  -- stopped?  pick random direction...
+  if vel < 0.01 then
+    e.vel_x = math.random() - 0.5
+    e.vel_y = math.random() - 0.5
+    return
+  end
+
+
+  -- the walls apply a repulsive force
+
+  for k = 1, 2 do
+    local kind = "outer" ; if k == 2 then kind = "inner" end
+
+    for wall = 2,8,2 do
+      local dist   = calc_dist_to_wall(kind, wall, e.x, e.y)
+      local nx, ny = calc_wall_normal(kind, wall)
+    end
+  end
+
+
+  e.x = e.x + e.vel_x
+  e.y = e.y + e.vel_y
+
+
+  -- spinning
+  local spin_speed = math.abs(e.vel_x) ^ 0.5 * 60 * dt
+
+  local spin_dir = 1 ; if e.vel_x > 0 then spin_dir = -1 end
+
+  e.angle = geom.angle_add(e.angle, spin_dir * spin_speed)
+
+end
+
+
+
 function enemy_think(e, dt)
   if e.dead then
     if e.dead == "animate" then
@@ -1241,9 +1356,7 @@ function enemy_think(e, dt)
   end
 
 
-  -- TODO : other kinds of movement
-
-  e.angle = geom.angle_add(e.angle, 360 * dt)
+  enemy_fly_in_curves(e, dt)
 end
 
 
