@@ -87,6 +87,8 @@ game =
 
   round = 0,
   round_str = "",
+
+  high_score = 0,
 }
 
 
@@ -374,7 +376,7 @@ function draw_all_entities()
     local along = game.time - (game.end_time + 1)
     local scale = 1 + along ^ 2 / 3
 
-    local dx = SCREEN_W * (scale - 1) / 2 
+    local dx = SCREEN_W * (scale - 1) / 2
     local dy = SCREEN_H * (scale - 1) / 2
 
     love.graphics.translate(-dx, -dy)
@@ -1230,11 +1232,11 @@ function calc_dist_to_wall(kind, dir, x, y)
   if kind == "outer" then
     -- prevent negative result (in case ship crosses over the line)
 
-    if dir == 4 then return math.max(0, x - OUTER_X1)
-    if dir == 6 then return math.max(0, OUTER_X2 - x)
+    if dir == 4 then return math.max(0, x - OUTER_X1) end
+    if dir == 6 then return math.max(0, OUTER_X2 - x) end
 
-    if dir == 8 then return math.max(0, y - OUTER_Y1)
-    if dir == 2 then return math.max(0, OUTER_Y2 - y)
+    if dir == 8 then return math.max(0, y - OUTER_Y1) end
+    if dir == 2 then return math.max(0, OUTER_Y2 - y) end
   end
 
   -- inner wall --
@@ -1287,7 +1289,7 @@ end
 function enemy_fly_in_curves(e, dt)
   -- used for the hunter
 
-  
+
   local vel = geom.vec_len(e.vel_x, e.vel_y)
 
   -- stopped?  pick random direction...
@@ -1306,6 +1308,13 @@ function enemy_fly_in_curves(e, dt)
     for wall = 2,8,2 do
       local dist   = calc_dist_to_wall(kind, wall, e.x, e.y)
       local nx, ny = calc_wall_normal(kind, wall)
+
+      if dist < 40 then
+        local factor = 100 / math.min(dist, 0.1)
+
+        e.vel_x = e.vel_x + nx * factor
+        e.vel_y = e.vel_y + ny * factor
+      end
     end
   end
 
@@ -1745,7 +1754,46 @@ end
 
 
 
+function load_high_score()
+  local f = game.score_file
+
+  if not f:open("r") then
+    -- does not exist yet
+    return
+  end
+
+  for line in f:lines() do
+    local kind, score = string.match("(%s+) (%d+)")
+
+    if kind == "single" then
+      game.high_score = 0 + score
+    end
+  end
+
+  f:close()
+end
+
+
+
+function save_high_score()
+  local f = game.score_file
+
+  if not f:open("w") then
+    -- odd, cannot create the file
+    return
+  end
+
+  local line = string.format("%s %d\r\n", "single", game.high_score)
+
+  f:write(line, #line)
+  f:close()
+end
+
+
+
 function love.load()
+  love.filesystem.setIdentity("torrega_race")
+
   love.graphics.setColor(255,255,255)
   love.graphics.setBackgroundColor(0,0,0)
 
@@ -1760,6 +1808,10 @@ function love.load()
 
   init_screen()
   flesh_out_players()
+
+  game.score_file = love.filesystem.newFile("hiscore.txt")
+
+  load_high_score()
 end
 
 
