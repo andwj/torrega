@@ -210,10 +210,12 @@ PLAYER_INFO =
 
     lines =
     {
+      -- for a more unique shape, uncomment two lines below (at -70 and 70 degrees)
+
       { -140, 1.00 },
-      {  -70, 0.84 },
+--    {  -70, 0.84 },
       {    0, 1.00 },
-      {   70, 0.84 },
+--    {   70, 0.84 },
       {  140, 1.00 },
     },
   },
@@ -816,7 +818,7 @@ end
 
 function new_game()
   game_set_round(1)
-  game_set_lives(0)
+  game_set_lives(2)
 
   player_create_all()
 
