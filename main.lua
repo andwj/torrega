@@ -149,6 +149,7 @@ ENEMY_INFO =
     hits = 5,
 
     speed = 80,
+    damp_speed = 3,
 
     score = 250,
 
@@ -1294,8 +1295,8 @@ function enemy_fly_in_curves(e, dt)
 
   -- stopped?  pick random direction...
   if vel < 0.01 then
-    e.vel_x = math.random() - 0.5
-    e.vel_y = math.random() - 0.5
+    e.vel_x = (math.random() - 0.5) * 10
+    e.vel_y = (math.random() - 0.5) * 10
     return
   end
 
@@ -1309,14 +1310,38 @@ function enemy_fly_in_curves(e, dt)
       local dist   = calc_dist_to_wall(kind, wall, e.x, e.y)
       local nx, ny = calc_wall_normal(kind, wall)
 
-      if dist < 40 then
-        local factor = 100 / math.min(dist, 0.1)
+      if dist < 10 then
+        e.vel_x = e.vel_x + nx * 200 * dt
+        e.vel_y = e.vel_y + ny * 200 * dt
 
-        e.vel_x = e.vel_x + nx * factor
-        e.vel_y = e.vel_y + ny * factor
+      elseif dist < 60 then
+        e.vel_x = e.vel_x + nx * 10 * dt
+        e.vel_y = e.vel_y + ny * 10 * dt
       end
     end
   end
+
+
+  -- travel towards a player
+  -- FIXME : pick other players in multiplayer game
+  -- FIXME : check if dead
+
+  local pdx = all_players[1].x - e.x
+  local pdy = all_players[1].y - e.y
+
+  e.vel_x = e.vel_x + pdx / 250 * dt
+  e.vel_y = e.vel_y + pdy / 250 * dt
+
+
+  -- apply a dampening if speed becomes high
+  vel = geom.vec_len(e.vel_x, e.vel_y)
+
+  local factor = vel / e.info.damp_speed
+  if factor > 1 then
+    e.vel_x = e.vel_x / factor
+    e.vel_y = e.vel_y / factor
+  end
+
 
 
   e.x = e.x + e.vel_x
@@ -1803,6 +1828,8 @@ function love.load()
   love.window.setTitle("Torrega Race")
 
   love.audio.setVolume(0.5)
+
+  math.randomseed(os.time())
 
   load_all_sounds()
 
