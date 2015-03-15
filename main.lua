@@ -107,6 +107,8 @@ ENEMY_INFO =
   {
     -- props --
 
+    name = "drone",
+
     hits = 1,
 
     speed = 80,
@@ -131,8 +133,41 @@ ENEMY_INFO =
       {   20, 1.00 },
       {   70, 1.00 },
       {  140, 1.00 },
-      {  180, 0.00 }
-    }
+      {  180, 0.00 },
+    },
+  },
+
+
+  hunter =
+  {
+    -- props --
+
+    name = "hunter",
+
+    hits = 5,
+
+    speed = 80,
+
+    score = 250,
+
+    firing_sound = "hunter_fire",
+    die_sound = "hunter_die",
+
+    -- shape --
+
+    r = 20,
+
+    color = { 255,0,0 },
+
+    lines =
+    {
+      {    0, 1.00 },  {   72, 0.50 },
+      {  144, 1.00 },  {  216, 0.50 },
+      {  288, 1.00 },  {    0, 0.50 },
+      {   72, 1.00 },  {  144, 0.50 },
+      {  216, 1.00 },  {  288, 0.50 },
+      {    0, 1.00 },
+    },
   },
 }
 
@@ -152,7 +187,7 @@ all_players = {}
 
 PLAYER_INFO =
 {
-  -- stuff shared by all players
+  -- properties shared by all players
   common =
   {
     -- draw radius
@@ -178,6 +213,8 @@ PLAYER_INFO =
 
   player1 =
   {
+    id = 1,
+
     spawn_x = 150,
     spawn_y = 114,
 
@@ -188,6 +225,8 @@ PLAYER_INFO =
 
   player2 =
   {
+    id = 2,
+
     spawn_x = 150,
     spawn_y = 144,
 
@@ -198,6 +237,8 @@ PLAYER_INFO =
 
   player3 =
   {
+    id = 3,
+
     spawn_x =  70,
     spawn_y =  68,
 
@@ -682,7 +723,7 @@ end
 function enemy_spawn_all()
   local speed_factor = 1 + (game.round - 1) * 0.1
 
-  for ey = 1, 5 do
+  for ey = 1, 0 do  -- FIXME
     for ex = 1, 6 do
       local x = INNER_X1 + ex * 50
 
@@ -696,6 +737,8 @@ function enemy_spawn_all()
       e.path = path
     end
   end
+
+  local e = enemy_spawn(700, 500, 0, 12, ENEMY_INFO.hunter)
 end
 
 
@@ -1572,7 +1615,7 @@ function love.load()
 
   load_all_fonts()
 
-  love.window.setMode(800, 600, {fullscreen=true})
+  love.window.setMode(800, 600, {fullscreen=false})
   love.window.setTitle("Torrega Race")
 
   love.audio.setVolume(0.5)
