@@ -730,8 +730,8 @@ end
 function enemy_spawn_all()
   local speed_factor = 1 + (game.round - 1) * 0.1
 
-  for ey = 1, 1 do  -- FIXME
-    for ex = 1, 6 do
+  for ey = 1, 4 do
+    for ex = 1, 4 do
       local x = INNER_X1 + ex * 50
 
       local path = enemy_make_drone_path(ey)
