@@ -1799,7 +1799,7 @@ function load_all_sounds()
 
   local wah1_data = gen_wah_wah_sound()
 
-  make_sound("drone_die", wah1_data, 3, 1.0, 1.5)
+  make_sound("drone_die", wah1_data, 3, 1.0, 1.0)
 end
 
 
