@@ -1312,8 +1312,8 @@ function enemy_fly_in_curves(e, dt)
 
   -- stopped?  pick random direction...
   if vel < 0.01 then
-    e.vel_x = (math.random() - 0.5) * 10
-    e.vel_y = (math.random() - 0.5) * 10
+    e.vel_x = (math.random() - 0.5) * 1000 * dt
+    e.vel_y = (math.random() - 0.5) * 1000 * dt
     return
   end
 
@@ -1353,6 +1353,32 @@ function enemy_fly_in_curves(e, dt)
   end
 
 
+  -- avoid other hunters
+
+  for i = 1, #all_enemies do
+    local e2 = all_enemies[i]
+    if (e2.info.name == "hunter") and e2 ~= e and not e2.dead then
+      local dx = e2.x - e.x
+      local dy = e2.y - e.y
+
+      local dist = e.info.bounce_r * 3 - geom.vec_len(dx, dy)
+
+      local force = 1.0
+      if e2.info.name == "hunter" then force = 100 end
+
+      if dist > 0 then
+        -- circles intersect : apply a repulsive force
+        local repulse = dist * force * dt
+
+        local nx, ny = geom.normalize(dx, dy)
+
+        e.vel_x = e.vel_x - nx * repulse
+        e.vel_y = e.vel_y - ny * repulse
+      end
+    end
+  end
+
+
   -- apply a dampening if speed becomes high
   local speed_factor = 1.0 + (game.round - 2) * 0.07
 
@@ -1365,7 +1391,7 @@ function enemy_fly_in_curves(e, dt)
   end
 
 
-
+  -- actually move
   e.x = e.x + e.vel_x
   e.y = e.y + e.vel_y
 
@@ -1376,7 +1402,6 @@ function enemy_fly_in_curves(e, dt)
   local spin_dir = 1 ; if e.vel_x > 0 then spin_dir = -1 end
 
   e.angle = geom.angle_add(e.angle, spin_dir * spin_speed)
-
 end
 
 
